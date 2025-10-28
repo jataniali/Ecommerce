@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from './components/Navbar';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Shop from './pages/Shop';
 import Shopcategory from './pages/Shopcategory';
 import Product from './pages/Product.jsx';
@@ -17,25 +17,23 @@ import RelatedProduct from './components/RelatedProduct/RelatedProduct.jsx';
 
 const App = () => {
   return (
-    
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path='/' element={<Shop />} />
-       <Route path='/products' element={<Shopcategory category="all" />} />
-          <Route path='/mens' element={<Shopcategory bunner={men_bunner} category="mens" />} />
-          <Route path='/womens' element={<Shopcategory bunner={women_bunner} category="women" />} />
-          <Route path='/electronics' element={<Shopcategory bunner={electronic_bunner} category="electronics" />} />
-          <Route path='/product/:productId' element={<Product />} />
-          <Route path='/cart' element={<Cart />} />
-          <Route path='/login' element={<Loginsignup />} />
-          <Route path='/shop' element={<Popular />} />
-          <Route path='/newcollection' element={<Newcollections />} />
-          <Route path='/relatedproduct' element={<RelatedProduct />} />
-        </Routes>
-        <Footer />
-      </BrowserRouter>
-    
+    <>
+      <Navbar />
+      <Routes>
+        <Route path='/' element={<Shop />} />
+        <Route path='/products' element={<Shopcategory category="all" />} />
+        <Route path='/mens' element={<Shopcategory bunner={men_bunner} category="mens" />} />
+        <Route path='/womens' element={<Shopcategory bunner={women_bunner} category="women" />} />
+        <Route path='/electronics' element={<Shopcategory bunner={electronic_bunner} category="electronics" />} />
+        <Route path='/product/:productId' element={<Product />} />
+        <Route path='/cart' element={<Cart />} />
+        <Route path='/login' element={<Loginsignup />} />
+        <Route path='/shop' element={<Popular />} />
+        <Route path='/newcollection' element={<Newcollections />} />
+        <Route path='/relatedproduct' element={<RelatedProduct />} />
+      </Routes>
+      <Footer />
+    </>
   );
 };
 
