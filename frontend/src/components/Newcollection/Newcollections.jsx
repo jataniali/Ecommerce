@@ -6,7 +6,7 @@ const Newcollections = () => {
 const [new_collection,setNew_collection]=useState([])
 
 useEffect(()=>{
-fetch("http://localhost:4000/newcollections").then((response)=>response.json())
+fetch(`${import.meta.env.VITE_API_URL}/newcollections`).then((response)=>response.json())
 .then((data)=>setNew_collection(data))
 })
   return (

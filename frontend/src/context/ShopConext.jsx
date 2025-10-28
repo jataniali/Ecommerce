@@ -13,7 +13,7 @@ const ShopcontextProvider = (props) => {
  useEffect(() => {
  const fetchProducts = async () => {
 try {
-const response = await fetch("http://localhost:4000/allproducts");
+const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
 const data = await response.json();
                 
                 // Log the first few products for debugging
@@ -45,7 +45,7 @@ fetchProducts();
             if (!token) return;
 
             try {
-                const response = await fetch("http://localhost:4000/getcart", {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/getcart`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const addtocart = async (itemId) => {
         // Ensure itemId is a string
         const itemIdStr = String(itemId);
         
-        const response = await fetch("http://localhost:4000/addtocart", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/addtocart`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ const addtocart = async (itemId) => {
                 [itemIdStr]: Math.max(0, (prev[itemIdStr] || 0) - 1)
             }));
             
-            const response = await fetch("http://localhost:4000/removefromcart", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/removefromcart`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ const addtocart = async (itemId) => {
             // to ensure UI is in sync with server
             if (localStorage.getItem('token')) {
                 try {
-                    const refreshResponse = await fetch("http://localhost:4000/getcart", {
+                    const refreshResponse = await fetch(`${import.meta.env.VITE_API_URL}/getcart`, {
                         headers: {
                             'token': localStorage.getItem('token')
                         }

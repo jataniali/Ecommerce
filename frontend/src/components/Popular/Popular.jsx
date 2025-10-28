@@ -4,7 +4,7 @@ import Items from '../Items/Items.jsx';
 const Popular = () => {
 const[data_product,setData_product]=useState([])
 useEffect(()=>{
-fetch("http://localhost:4000/popular").then((response)=>response.json())
+fetch(`${import.meta.env.VITE_API_URL}/popular`).then((response)=>response.json())
 .then((data)=>setData_product(data))
 },[])
   return (

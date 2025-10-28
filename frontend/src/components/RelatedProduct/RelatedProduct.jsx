@@ -11,7 +11,7 @@ const RelatedProduct = () => {
     const fetchRelatedProducts = async () => {
       try {
         // Fetch all products
-        const response = await fetch("http://localhost:4000/allproducts");
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
         const allProducts = await response.json();
         
         // Filter out the current product and get a random sample

@@ -14,7 +14,7 @@ setFormdata({...formdata,[e.target.name]:e.target.value})
 }
 const login =async()=>{
 console.log("login",formdata)
-  let response= await fetch("http://localhost:4000/login",{
+  let response= await fetch(`${import.meta.env.VITE_API_URL}/login`,{
 method:"POST",
 headers:{
 Accept:"application/json",
@@ -34,7 +34,7 @@ localStorage.setItem("token", data.token);
 }
   const signup= async()=>{
   console.log("signup",formdata)
-  let response= await fetch("http://localhost:4000/signup",{
+  let response= await fetch(`${import.meta.env.VITE_API_URL}/signup`,{
 method:"POST",
 headers:{
 Accept:"application/json",
