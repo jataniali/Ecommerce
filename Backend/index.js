@@ -610,7 +610,11 @@ if (fs.existsSync(frontendPath)) {
   console.warn('Frontend build not found at:', frontendPath);
   
   // In development, serve a helpful message
-  app.get('*', (req, res) => {
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
     res.status(404).send(`
       <h1>Frontend Build Not Found</h1>
       <p>Please build your frontend with 'npm run build' in the frontend directory.</p>
