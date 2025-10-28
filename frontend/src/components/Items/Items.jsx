@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { normalizeImageUrl } from '../../utils/imageUtils';
+import { normalizeImageUrl, getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const Items = (props) => {
   const navigate = useNavigate();
@@ -23,8 +23,14 @@ const Items = (props) => {
   // Set the image URL when component mounts or image prop changes
   React.useEffect(() => {
     if (props.image) {
-      const processedUrl = normalizeImageUrl(props.image);
-      setCurrentImage(processedUrl);
+      // Use optimized URL with responsive settings
+      const optimizedUrl = getOptimizedImageUrl(props.image, {
+        width: 300,
+        height: 300,
+        crop: 'fill',
+        quality: 'auto'
+      });
+      setCurrentImage(optimizedUrl);
       setImageError(false);
     }
   }, [props.image]);
@@ -59,12 +65,15 @@ const Items = (props) => {
       >
         {currentImage && !imageError ? (
           <img 
-            src={currentImage}
-            alt={props.name || 'Product image'}
-            className="w-full h-full object-contain p-2"
-            onError={handleImageError}
+            onClick={handleImageClick} 
+            src={imageError ? "https://via.placeholder.com/300x300?text=Image+Not+Found" : currentImage} 
+            alt={props.name}
+            onError={() => {
+              console.error('Error loading image:', currentImage);
+              setImageError(true);
+            }}
             loading="lazy"
-            decoding="async"
+            className="w-full h-[250px] object-cover rounded-t-lg cursor-pointer hover:opacity-90 transition-opacity"
           />
         ) : (
           <div className="text-center p-4 text-gray-400">

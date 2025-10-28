@@ -9,14 +9,16 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from 'cors';
 import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Enable JSON
+// ✅ Middleware
 app.use(express.json());
 
-// ✅ Simplified but secure CORS configuration
+// ✅ CORS setup
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
   'http://localhost:5173',
@@ -48,40 +50,35 @@ app.use(
   })
 );
 
-// ✅ MongoDB Connection with Logging
+// ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected successfully'))
-  .catch((err) => console.error('❌ MongoDB connection error:', err));
+  .catch((err) => console.error(' MongoDB connection error:', err));
 
-// Basic route
+// ✅ Basic route
 app.get('/', (req, res) => {
   res.send('Hello from Backend');
 });
 
-// File setup
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ✅ Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, 'uploads/images');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: './uploads/images',
-  filename: (req, file, cb) => {
-    cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`);
-  }
+// ✅ Cloudinary Storage setup
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'ecommerce-products',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+  },
 });
 const upload = multer({ storage });
 
-// Serve images
-app.use('/images', express.static('uploads/images'));
-
-// ✅ Product schema
+// ✅ Product Schema
 const Product = mongoose.model('Product', {
   name: { type: String, required: true },
   image: { type: String, required: true },
@@ -92,14 +89,10 @@ const Product = mongoose.model('Product', {
   category: { type: String, required: true }
 });
 
-// ✅ Add product (Fixed image URL handling)
+// ✅ Add Product
 app.post('/addproduct', async (req, res) => {
   try {
-    const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
-    const imageUrl = req.body.image.startsWith('http')
-      ? req.body.image
-      : `${baseUrl}${req.body.image}`;
-
+    const imageUrl = req.body.image; // Cloudinary URL directly
     const product = new Product({
       name: req.body.name,
       image: imageUrl,
@@ -117,7 +110,7 @@ app.post('/addproduct', async (req, res) => {
   }
 });
 
-// Delete product
+// ✅ Delete Product
 app.post('/removeproduct', async (req, res) => {
   try {
     await Product.findOneAndDelete({ _id: req.body.id });
@@ -129,7 +122,7 @@ app.post('/removeproduct', async (req, res) => {
   }
 });
 
-// Get all products
+// ✅ Get All Products
 app.get('/allproducts', async (req, res) => {
   try {
     let products = await Product.find({});
@@ -141,7 +134,7 @@ app.get('/allproducts', async (req, res) => {
   }
 });
 
-// User schema
+// ✅ User Schema
 const users = mongoose.model('users', {
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -150,7 +143,7 @@ const users = mongoose.model('users', {
   date: { type: Date, default: Date.now }
 });
 
-// Signup
+// ✅ Signup
 app.post('/signup', async (req, res) => {
   let check = await users.findOne({ email: req.body.email });
   if (check) {
@@ -158,9 +151,7 @@ app.post('/signup', async (req, res) => {
   }
 
   let cart = {};
-  for (let i = 0; i < 300; i++) {
-    cart[i] = 0;
-  }
+  for (let i = 0; i < 300; i++) cart[i] = 0;
 
   const user = new users({
     name: req.body.username,
@@ -175,21 +166,20 @@ app.post('/signup', async (req, res) => {
   res.json({ success: true, token: authtoken });
 });
 
-// Login
+// ✅ Login
 app.post('/login', async (req, res) => {
   let user = await users.findOne({ email: req.body.email });
   if (!user) return res.json({ success: false, message: 'Wrong Email' });
 
   const passwordMatch = req.body.password === user.password;
-  if (!passwordMatch)
-    return res.json({ success: false, message: 'Wrong Password' });
+  if (!passwordMatch) return res.json({ success: false, message: 'Wrong Password' });
 
   const data = { user: { id: user.id } };
   const token = jwt.sign(data, process.env.JWT_SECRET || 'fallback_secret');
   res.json({ success: true, token });
 });
 
-// Fetch user middleware
+// ✅ Fetch user middleware
 const fetchuser = async (req, res, next) => {
   const token = req.header('token');
   if (!token) return res.status(401).send({ error: 'Please authenticate using a valid token' });
@@ -203,15 +193,12 @@ const fetchuser = async (req, res, next) => {
   }
 };
 
-// Add to cart
+// ✅ Add to Cart
 app.post('/addtocart', fetchuser, async (req, res) => {
   try {
     const userData = await users.findById(req.user.id);
-    if (!userData) return res.status(404).json({ success: false, message: 'User not found' });
-
     const itemId = String(req.body.itemId);
     userData.cartData[itemId] = (userData.cartData[itemId] || 0) + 1;
-
     await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
     res.json({ success: true, cartData: userData.cartData });
   } catch (error) {
@@ -220,86 +207,64 @@ app.post('/addtocart', fetchuser, async (req, res) => {
   }
 });
 
-// Remove from cart
+// ✅ Remove from Cart
 app.post('/removefromcart', fetchuser, async (req, res) => {
   try {
     const userData = await users.findById(req.user.id);
-    if (!userData) return res.status(404).json({ success: false, message: 'User not found' });
-
     const itemId = String(req.body.itemId);
     if (userData.cartData[itemId] > 0) userData.cartData[itemId] -= 1;
-
     await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
     res.json({ success: true, cartData: userData.cartData });
   } catch (error) {
-    console.error('❌ Error in /removefromcart:', error);
+    console.error(' Error in /removefromcart:', error);
     res.status(500).json({ success: false, message: 'Error removing from cart' });
   }
 });
 
-// Get cart data
+// ✅ Get Cart Data
 app.post('/getcart', fetchuser, async (req, res) => {
-  console.log('🛒 get cart');
   let userData = await users.findOne({ _id: req.user.id });
   res.json(userData.cartData);
 });
 
-// New collections
+// ✅ New Collections
 app.get('/newcollections', async (req, res) => {
   let products = await Product.find({});
   let newcollections = products.slice(1).slice(-8);
-  console.log('✨ New Collections fetched successfully');
   res.send(newcollections);
 });
 
-// Popular
+// ✅ Popular Products
 app.get('/popular', async (req, res) => {
   let products = await Product.find({});
   let popular = products.slice(1).slice(-8);
-  console.log('🔥 Popular Products fetched successfully');
   res.send(popular);
 });
 
-// Upload image
-const getBaseUrl = (req) => {
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+// ✅ Upload image to Cloudinary
+app.post('/upload', upload.single('product'), async (req, res) => {
+  try {
+    res.json({
+      success: 1,
+      image_url: req.file.path, // Cloudinary auto adds this URL
+      message: 'Image uploaded successfully',
+    });
+  } catch (error) {
+    console.error(' Cloudinary upload error:', error);
+    res.status(500).json({ success: 0, message: 'Upload failed' });
   }
-  return `http://localhost:${PORT}`;
-};
-
-app.post('/upload', upload.single('product'), (req, res) => {
-  if (!req.file) return res.status(400).json({ success: 0, message: 'No file uploaded' });
-
-  const baseUrl = getBaseUrl(req);
-  const imageUrl = `${baseUrl}/images/${req.file.filename}`;
-
-  res.json({ success: 1, image_url: imageUrl, message: 'Image uploaded successfully' });
 });
 
-// ✅ Serve frontend build (fixed)
+// ✅ Serve frontend build
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 const indexPath = path.join(frontendPath, 'index.html');
 
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
-
-  // Catch-all: send index.html for non-API routes
   app.get('*', (req, res) => {
-    if (
-      req.path.startsWith('/api') ||
-      req.path.startsWith('/auth') ||
-      req.path.startsWith('/images') ||
-      req.path.startsWith('/upload') ||
-      req.path.startsWith('/allproducts') ||
-      req.path.startsWith('/newcollections') ||
-      req.path.startsWith('/popular') ||
-      req.path.startsWith('/addtocart') ||
-      req.path.startsWith('/removefromcart') ||
-      req.path.startsWith('/getcart') ||
-      req.path.startsWith('/signup') ||
-      req.path.startsWith('/login')
-    ) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/upload')) {
       return res.status(404).send('Not Found');
     }
     res.sendFile(indexPath);
@@ -308,12 +273,11 @@ if (fs.existsSync(frontendPath)) {
   console.warn('⚠️ Frontend build not found at:', frontendPath);
 }
 
-// ✅ Start server
+// ✅ Start Server
 app.listen(PORT, (error) => {
   if (!error) {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
+    console.log(` Server running on port ${PORT}`);
   } else {
-    console.log('❌ Server start error:', error);
+    console.log(' Server start error:', error);
   }
 });

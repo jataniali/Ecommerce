@@ -1,15 +1,23 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { resolve } from 'path'
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
+  // Load env file based on `mode` in the current directory and all parent directories
+  const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
   
   return {
     plugins: [react(), tailwindcss()],
     base: isProduction ? '/' : '/',
+    define: {
+      'process.env': {
+        ...env,
+        NODE_ENV: env.NODE_ENV || 'development'
+      }
+    },
     server: {
       port: 5173,
       strictPort: true,
@@ -18,16 +26,16 @@ export default defineConfig(({ command, mode }) => {
       proxy: {
         // Proxy API requests in development
         '/api': {
-          target: 'http://localhost:4000',
+          target: env.VITE_API_URL || 'http://localhost:4000',
           changeOrigin: true,
           secure: false,
           ws: true,
           rewrite: (path) => path.replace(/^\/api/, '')
         },
         // Add other API endpoints that need to be proxied
-        '/allproducts': 'http://localhost:4000',
-        '/newcollections': 'http://localhost:4000',
-        '/popular': 'http://localhost:4000',
+        '/allproducts': env.VITE_API_URL || 'http://localhost:4000',
+        '/newcollections': env.VITE_API_URL || 'http://localhost:4000',
+        '/popular': env.VITE_API_URL || 'http://localhost:4000',
         '/addtocart': 'http://localhost:4000',
         '/removefromcart': 'http://localhost:4000',
         '/getcart': 'http://localhost:4000',
