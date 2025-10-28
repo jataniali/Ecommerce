@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { FaTrash, FaTimes } from "react-icons/fa";
-import { ShopContext } from '../../context/ShopConext';
+import { ShopContext } from '../../context/ShopContext';
 
 const CartItems = () => {
   const { all_products = [], cartitems = {}, gettotalcartamount, removefromcart, isLoading } = useContext(ShopContext);
