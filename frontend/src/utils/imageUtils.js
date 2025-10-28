@@ -1,4 +1,4 @@
-// Default base URL for production
+// Default base URL for your backend on Render
 const DEFAULT_API_URL = 'https://ecommerce-backend-7lkk.onrender.com';
 
 /**
@@ -8,31 +8,25 @@ const DEFAULT_API_URL = 'https://ecommerce-backend-7lkk.onrender.com';
  */
 export const normalizeImageUrl = (imageUrl) => {
   if (!imageUrl) return '';
-  
-  // If it's already a full URL, return as is
+
+  // If the URL is already complete (starts with http), return as is
   if (imageUrl.startsWith('http')) {
     return imageUrl;
   }
-  
-  // Use the production backend URL for all image requests
-  const baseUrl = 'https://ecommerce-backend-7lkk.onrender.com';
-  
-  // Remove any leading slashes to avoid double slashes
+
+  // Remove any double slashes and leading slashes
   const cleanPath = imageUrl.replace(/^\/+/, '');
-  
-  // If the path already includes 'images', use it as is
-  if (cleanPath.includes('images/')) {
-    return `${baseUrl}/${cleanPath}`;
+
+  // Ensure only one /images/ prefix
+  if (cleanPath.startsWith('images/')) {
+    return `${DEFAULT_API_URL}/${cleanPath}`;
   }
-  
-  // Otherwise, prepend /images/
-  return `${baseUrl}/images/${cleanPath}`;
+
+  return `${DEFAULT_API_URL}/images/${cleanPath}`;
 };
 
 /**
- * Extracts the image filename from a URL
- * @param {string} url - The image URL
- * @returns {string} - The extracted filename
+ * Extracts filename from URL (optional helper)
  */
 export const getImageFilename = (url) => {
   if (!url) return '';
