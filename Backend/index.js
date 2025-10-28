@@ -27,37 +27,39 @@ app.use((req, res, next) => {
 });
 
 // Configure CORS with specific options
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:4000',
-      'https://ecommerce-frontend-4gjt.onrender.com',
-      'https://ecommerce-backend-7lkk.onrender.com'
-    ];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4000',
+  'https://ecommerce-frontend-4gjt.onrender.com',
+  'https://ecommerce-backend-7lkk.onrender.com'
+];
+
+// CORS middleware function
+const corsMiddleware = (req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Check if the origin is in the allowed list or if it's a direct API call
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      console.log('CORS blocked for origin:', origin);
-      return callback(new Error(msg), false);
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      console.log('Handling preflight request for:', req.originalUrl);
+      return res.status(200).end();
     }
-    return callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  } else {
+    console.log('CORS blocked for origin:', origin);
+    return res.status(403).json({ error: 'Not allowed by CORS' });
+  }
+  
+  next();
 };
 
-// Apply CORS to all routes
-app.use(cors(corsOptions));
-
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Apply CORS middleware to all routes
+app.use(corsMiddleware);
 
 //database connection with mongodb 
 mongoose.connect(process.env.MONGODB_URI)
