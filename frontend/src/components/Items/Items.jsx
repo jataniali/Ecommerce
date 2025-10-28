@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { normalizeImageUrl } from '../../utils/imageUtils';
 
 const Items = (props) => {
   const navigate = useNavigate();
@@ -20,9 +21,13 @@ const Items = (props) => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
       <div onClick={handleImageClick} className="cursor-pointer">
         <img 
-          src={props.image} 
+          src={normalizeImageUrl(props.image)} 
           alt={props.name}
           className="w-full h-48 object-cover hover:opacity-90 transition-opacity"
+          onError={(e) => {
+            console.error('Error loading image:', props.image);
+            e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+          }}
         />
       </div>
       <div className="p-4">

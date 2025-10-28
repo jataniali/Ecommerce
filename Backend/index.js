@@ -3,13 +3,14 @@ dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 
-import express from 'express'
-import mongoose from 'mongoose'
+import express from 'express';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
-import path from "path";
-import { fileURLToPath } from "url"
-import cors from 'cors'
+import path from 'path';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+import fs from 'fs';
 
 const app=express()
 app.use(express.json())
@@ -58,19 +59,86 @@ storage:storage
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-//creating upload endpoint for images
-app.use('/images', express.static(path.join(__dirname, '/uploads/images')));
-app.post('/upload',upload.single('product'),(req,res)=>{
-const baseUrl = process.env.NODE_ENV === 'production' 
-  ? process.env.BACKEND_URL || `http://localhost:${PORT}`
-  : `http://localhost:${PORT}`;
 
-res.json({
-success:1,
-image_url:`${baseUrl}/images/${req.file.filename}`,
-message:"Image uploaded successfully"
-})
-})
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads/images');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Serve static files from uploads directory with proper caching headers
+app.use('/images', express.static(uploadsDir, {
+  etag: true,
+  lastModified: true,
+  maxAge: '1y',
+  setHeaders: (res, path) => {
+    res.set('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+  }
+}));
+
+// Add a route to handle image requests with case-insensitive matching
+app.get('/images/:imageName', (req, res) => {
+  const imageName = req.params.imageName;
+  const imagePath = path.join(uploadsDir, imageName);
+  
+  // Check if file exists with case-insensitive matching
+  if (fs.existsSync(imagePath)) {
+    res.sendFile(imagePath, {
+      headers: {
+        'Cache-Control': 'public, max-age=31536000' // 1 year cache
+      }
+    });
+  } else {
+    // Try case-insensitive search
+    const files = fs.readdirSync(uploadsDir);
+    const foundFile = files.find(file => 
+      file.toLowerCase() === imageName.toLowerCase()
+    );
+    
+    if (foundFile) {
+      res.sendFile(path.join(uploadsDir, foundFile), {
+        headers: {
+          'Cache-Control': 'public, max-age=31536000' // 1 year cache
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: 0,
+        message: 'Image not found'
+      });
+    }
+  }
+});
+
+// Get the base URL based on the environment
+const getBaseUrl = (req) => {
+  if (process.env.NODE_ENV === 'production') {
+    // For production, use the environment variable or construct from request
+    return process.env.BACKEND_URL || 
+           `${req.protocol}://${req.get('host')}`;
+  }
+  // For development, use localhost with the correct protocol
+  return `http://localhost:${PORT}`;
+};
+
+// Upload endpoint
+app.post('/upload', upload.single('product'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: 0,
+      message: 'No file uploaded'
+    });
+  }
+
+  const baseUrl = getBaseUrl(req);
+  const imageUrl = `${baseUrl}/images/${req.file.filename}`;
+  
+  res.json({
+    success: 1,
+    image_url: imageUrl,
+    message: 'Image uploaded successfully'
+  });
+});
 
 // creating schema for products
 const Product=mongoose.model('Product',{
