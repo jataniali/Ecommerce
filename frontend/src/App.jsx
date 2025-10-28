@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Shop from './pages/Shop';
 import Shopcategory from './pages/Shopcategory';
 import Product from './pages/Product.jsx';
-import Cart from './pages/cart';
+import Cart from './pages/Cart';
 import Loginsignup from './pages/Loginsignup';
 import Footer from './components/Footer/Footer';
 import women_bunner from './assets/womencloth-banner.jpg';
