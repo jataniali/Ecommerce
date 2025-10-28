@@ -271,37 +271,32 @@ app.post('/upload', upload.single('product'), (req, res) => {
   res.json({ success: 1, image_url: imageUrl, message: 'Image uploaded successfully' });
 });
 
-// ✅ Serve frontend build
+// ✅ Serve frontend build (fixed)
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 const indexPath = path.join(frontendPath, 'index.html');
-
-const apiRoutes = [
-  '/api',
-  '/auth',
-  '/upload',
-  '/images',
-  '/allproducts',
-  '/newcollections',
-  '/popular',
-  '/addtocart',
-  '/removefromcart',
-  '/getcart',
-  '/signup',
-  '/login'
-];
 
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
 
-  app.get('*', (req, res, next) => {
-    if (apiRoutes.some((route) => req.path.startsWith(route))) return next();
-
-    const hasExtension = ['.js', '.css', '.json', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico']
-      .some((ext) => req.path.endsWith(ext));
-    if (hasExtension) return next();
-
-    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
-    res.status(404).send('Frontend build not found. Please build your frontend.');
+  // Catch-all: send index.html for non-API routes
+  app.get('*', (req, res) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/auth') ||
+      req.path.startsWith('/images') ||
+      req.path.startsWith('/upload') ||
+      req.path.startsWith('/allproducts') ||
+      req.path.startsWith('/newcollections') ||
+      req.path.startsWith('/popular') ||
+      req.path.startsWith('/addtocart') ||
+      req.path.startsWith('/removefromcart') ||
+      req.path.startsWith('/getcart') ||
+      req.path.startsWith('/signup') ||
+      req.path.startsWith('/login')
+    ) {
+      return res.status(404).send('Not Found');
+    }
+    res.sendFile(indexPath);
   });
 } else {
   console.warn('⚠️ Frontend build not found at:', frontendPath);
