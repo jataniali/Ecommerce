@@ -586,16 +586,19 @@ if (fs.existsSync(frontendPath)) {
     
     // For all other routes, serve index.html
     console.log(`Serving index.html for client-side route: ${req.path}`);
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error('Error sending index.html:', err);
-        // If we can't send index.html, try to serve the file directly
-        if (fs.existsSync(path.join(frontendPath, req.path))) {
-          return res.sendFile(path.join(frontendPath, req.path));
+    
+    // Check if the file exists first
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error('Error sending index.html:', err);
+          res.status(500).send('Error loading the application');
         }
-        res.status(500).send('Error loading the application');
-      }
-    });
+      });
+    } else {
+      console.error('Index.html not found at:', indexPath);
+      return res.status(404).send('Frontend build not found. Please build your frontend.');
+    }
   });
   
   // Handle 404 for API routes
