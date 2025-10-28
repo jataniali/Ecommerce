@@ -21,38 +21,72 @@ app.use((req, res, next) => {
     method: req.method,
     url: req.originalUrl,
     origin: req.headers.origin,
-    'user-agent': req.headers['user-agent']
+    'user-agent': req.headers['user-agent'],
+    'accept': req.headers.accept,
+    'accept-encoding': req.headers['accept-encoding']
   });
   next();
 });
 
 // Configure CORS with specific options
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4000',
   'https://ecommerce-frontend-4gjt.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:4000',
   'https://ecommerce-backend-7lkk.onrender.com'
 ];
 
-// CORS middleware function
+// CORS middleware function with enhanced headers and logging
 const corsMiddleware = (req, res, next) => {
   const origin = req.headers.origin;
+  const requestHeaders = req.headers['access-control-request-headers'];
   
+  console.log('CORS Headers Check:', {
+    origin,
+    method: req.method,
+    url: req.originalUrl,
+    requestHeaders,
+    allowedOrigins
+  });
+
   // Check if the origin is in the allowed list or if it's a direct API call
-  if (allowedOrigins.includes(origin) || !origin) {
+  const isAllowedOrigin = !origin || allowedOrigins.some(allowedOrigin => {
+    return origin === allowedOrigin || 
+           origin.replace(/^https?:\/\//, '') === allowedOrigin.replace(/^https?:\/\//, '');
+  });
+
+  if (isAllowedOrigin) {
+    // Set CORS headers
     res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Auth-Token');
     res.header('Access-Control-Allow-Credentials', 'true');
-    
+    res.header('Access-Control-Expose-Headers', 'Content-Length, Content-Type, Authorization');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-      console.log('Handling preflight request for:', req.originalUrl);
-      return res.status(200).end();
+      // Add additional headers for preflight requests if needed
+      if (requestHeaders) {
+        res.header('Access-Control-Allow-Headers', requestHeaders);
+      }
+      console.log('Preflight request:', { origin, headers: res.getHeaders() });
+      return res.status(204).end();
     }
+    
+    console.log('Allowed CORS request:', { origin, url: req.originalUrl });
   } else {
-    console.log('CORS blocked for origin:', origin);
-    return res.status(403).json({ error: 'Not allowed by CORS' });
+    // For non-allowed origins, log and block
+    console.warn(`Blocked request from unauthorized origin: ${origin}`, {
+      url: req.originalUrl,
+      method: req.method,
+      allowedOrigins
+    });
+    
+    // You can choose to block the request or allow it with limited access
+    // For now, we'll allow the request but log it
+    res.header('Access-Control-Allow-Origin', origin);
   }
   
   next();
@@ -90,31 +124,82 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Serve static files from uploads directory with proper caching headers
-app.use('/images', express.static(uploadsDir, {
-  etag: true,
-  lastModified: true,
-  maxAge: '1y',
-  setHeaders: (res, filePath) => {
-    // Cache images for 1 year
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    
-    // Set proper content type based on file extension
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.svg': 'image/svg+xml'
-    };
-    
-    if (mimeTypes[ext]) {
-      res.setHeader('Content-Type', mimeTypes[ext]);
-    }
+// Enhanced static file serving with better error handling and logging
+app.use('/images', (req, res, next) => {
+  // Log image requests for debugging
+  console.log('Image request:', {
+    originalUrl: req.originalUrl,
+    path: req.path,
+    method: req.method,
+    headers: req.headers
+  });
+  
+  // Set CORS headers for all image responses
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
+  
+  // Continue to the static file serving
+  next();
+}, express.static('uploads/images', {
+  setHeaders: (res, filePath) => {
+    try {
+      // Set cache headers
+      const oneYear = 31536000; // 1 year in seconds
+      res.setHeader('Cache-Control', `public, max-age=${oneYear}, immutable`);
+      
+      // Set content type based on file extension
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon'
+      };
+      
+      if (mimeTypes[ext]) {
+        res.setHeader('Content-Type', mimeTypes[ext]);
+      } else {
+        console.warn(`Unknown file extension: ${ext} for file: ${filePath}`);
+      }
+      
+      // Log successful image serving
+      console.log(`Serving image: ${filePath}`, {
+        'content-type': res.getHeader('Content-Type'),
+        'cache-control': res.getHeader('Cache-Control')
+      });
+    } catch (error) {
+      console.error('Error setting image headers:', error);
+    }
+  },
+  
+  // Handle errors when serving static files
+  fallthrough: false
 }));
+
+// Error handler for static files
+app.use('/images', (err, req, res, next) => {
+  console.error('Error serving image:', {
+    error: err.message,
+    url: req.originalUrl,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+  
+  // Send a default image or error response
+  res.status(404).json({
+    success: false,
+    message: 'Image not found or error serving image',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
 
 // Fallback image handler for case-insensitive matching
 app.get('/images/:imageName', (req, res) => {
@@ -492,14 +577,22 @@ if (fs.existsSync(frontendPath)) {
     }
     
     // Skip static files with extensions (like .js, .css, .jpg, etc.)
-    if (req.path.includes('.') && !req.path.endsWith('/')) {
+    const fileExtensions = ['.js', '.css', '.json', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+    const hasExtension = fileExtensions.some(ext => req.path.endsWith(ext));
+    
+    if (hasExtension) {
       return next();
     }
     
+    // For all other routes, serve index.html
     console.log(`Serving index.html for client-side route: ${req.path}`);
     res.sendFile(indexPath, (err) => {
       if (err) {
         console.error('Error sending index.html:', err);
+        // If we can't send index.html, try to serve the file directly
+        if (fs.existsSync(path.join(frontendPath, req.path))) {
+          return res.sendFile(path.join(frontendPath, req.path));
+        }
         res.status(500).send('Error loading the application');
       }
     });

@@ -18,36 +18,21 @@ const Items = (props) => {
   };
 
   const [imageError, setImageError] = React.useState(false);
-  const [imageLoading, setImageLoading] = React.useState(true);
   const [currentImage, setCurrentImage] = React.useState('');
 
-  // Preprocess the image URL when the component mounts or when props.image changes
+  // Set the image URL when component mounts or image prop changes
   React.useEffect(() => {
     if (props.image) {
       const processedUrl = normalizeImageUrl(props.image);
-      console.log(`Processing image URL: ${props.image} -> ${processedUrl}`);
       setCurrentImage(processedUrl);
       setImageError(false);
-      setImageLoading(true);
     }
   }, [props.image]);
 
   const handleImageError = (e) => {
-    console.error('Error loading image:', {
-      originalUrl: props.image,
-      processedUrl: currentImage,
-      error: e
-    });
+    console.error('Failed to load image:', e.target.src);
     setImageError(true);
-    // Only try to set the fallback if we haven't already tried it
-    if (e.target.src !== 'https://via.placeholder.com/300x200?text=Image+Not+Available') {
-      e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
-    }
-  };
-
-  const handleImageLoad = () => {
-    console.log('Image loaded successfully:', currentImage);
-    setImageLoading(false);
+    e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
   };
 
   // If we don't have an image URL, show a placeholder
@@ -66,33 +51,38 @@ const Items = (props) => {
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
       <div 
         onClick={handleImageClick} 
-        className="cursor-pointer relative bg-gray-100"
-        style={{ minHeight: '12rem' }}
+        className="cursor-pointer bg-gray-100 flex items-center justify-center"
+        style={{ 
+          height: '12rem',
+          overflow: 'hidden'
+        }}
       >
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-pulse w-full h-full bg-gray-200"></div>
-          </div>
-        )}
-        <img 
-          key={currentImage} // Force re-render when image changes
-          src={currentImage}
-          alt={props.name || 'Product image'}
-          className={`w-full h-48 object-contain bg-white ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-          onError={handleImageError}
-          onLoad={handleImageLoad}
-          loading="lazy"
-          decoding="async"
-          style={{
-            minHeight: '12rem',
-            maxHeight: '12rem',
-            objectFit: 'contain',
-            padding: '0.5rem'
-          }}
-        />
-        {imageError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
-            <span>Image not available</span>
+        {currentImage && !imageError ? (
+          <img 
+            src={currentImage}
+            alt={props.name || 'Product image'}
+            className="w-full h-full object-contain p-2"
+            onError={handleImageError}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="text-center p-4 text-gray-400">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-12 w-12 mx-auto mb-2" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1} 
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
+              />
+            </svg>
+            <p className="text-sm">Image not available</p>
           </div>
         )}
       </div>

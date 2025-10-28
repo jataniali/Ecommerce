@@ -13,6 +13,8 @@ export default defineConfig(({ command, mode }) => {
     server: {
       port: 5173,
       strictPort: true,
+      // This ensures that the server will fallback to index.html for client-side routing
+      historyApiFallback: true,
       proxy: {
         // Proxy API requests in development
         '/api': {
