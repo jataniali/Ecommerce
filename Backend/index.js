@@ -92,21 +92,27 @@ const Product = mongoose.model('Product', {
   category: { type: String, required: true }
 });
 
-// Add product
+// ✅ Add product (Fixed image URL handling)
 app.post('/addproduct', async (req, res) => {
   try {
+    const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const imageUrl = req.body.image.startsWith('http')
+      ? req.body.image
+      : `${baseUrl}${req.body.image}`;
+
     const product = new Product({
       name: req.body.name,
-      image: req.body.image,
+      image: imageUrl,
       new_price: req.body.new_price,
       category: req.body.category,
       old_price: req.body.old_price
     });
+
     await product.save();
-    console.log('Product Added Successfully');
+    console.log('✅ Product Added Successfully');
     res.json({ success: true, name: req.body.name });
   } catch (error) {
-    console.error('Error adding product:', error);
+    console.error('❌ Error adding product:', error);
     res.status(500).json({ success: false, message: 'Error adding product' });
   }
 });
@@ -115,10 +121,10 @@ app.post('/addproduct', async (req, res) => {
 app.post('/removeproduct', async (req, res) => {
   try {
     await Product.findOneAndDelete({ _id: req.body.id });
-    console.log('Product Deleted Successfully');
+    console.log('🗑️ Product Deleted Successfully');
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting product:', error);
+    console.error('❌ Error deleting product:', error);
     res.status(500).json({ success: false, message: 'Error deleting product' });
   }
 });
@@ -127,10 +133,10 @@ app.post('/removeproduct', async (req, res) => {
 app.get('/allproducts', async (req, res) => {
   try {
     let products = await Product.find({});
-    console.log('All products fetched successfully');
+    console.log('📦 All products fetched successfully');
     res.send(products);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('❌ Error fetching products:', error);
     res.status(500).json({ success: false, message: 'Error fetching products' });
   }
 });
@@ -209,7 +215,7 @@ app.post('/addtocart', fetchuser, async (req, res) => {
     await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
     res.json({ success: true, cartData: userData.cartData });
   } catch (error) {
-    console.error('Error in /addtocart:', error);
+    console.error('❌ Error in /addtocart:', error);
     res.status(500).json({ success: false, message: 'Error adding to cart' });
   }
 });
@@ -226,14 +232,14 @@ app.post('/removefromcart', fetchuser, async (req, res) => {
     await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
     res.json({ success: true, cartData: userData.cartData });
   } catch (error) {
-    console.error('Error in /removefromcart:', error);
+    console.error('❌ Error in /removefromcart:', error);
     res.status(500).json({ success: false, message: 'Error removing from cart' });
   }
 });
 
 // Get cart data
 app.post('/getcart', fetchuser, async (req, res) => {
-  console.log('get cart');
+  console.log('🛒 get cart');
   let userData = await users.findOne({ _id: req.user.id });
   res.json(userData.cartData);
 });
@@ -242,7 +248,7 @@ app.post('/getcart', fetchuser, async (req, res) => {
 app.get('/newcollections', async (req, res) => {
   let products = await Product.find({});
   let newcollections = products.slice(1).slice(-8);
-  console.log('New Collections fetched successfully');
+  console.log('✨ New Collections fetched successfully');
   res.send(newcollections);
 });
 
@@ -250,7 +256,7 @@ app.get('/newcollections', async (req, res) => {
 app.get('/popular', async (req, res) => {
   let products = await Product.find({});
   let popular = products.slice(1).slice(-8);
-  console.log('Popular Products fetched successfully');
+  console.log('🔥 Popular Products fetched successfully');
   res.send(popular);
 });
 
@@ -308,6 +314,6 @@ app.listen(PORT, (error) => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
   } else {
-    console.log(' Server start error:', error);
+    console.log('❌ Server start error:', error);
   }
 });
