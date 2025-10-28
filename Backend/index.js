@@ -26,28 +26,38 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enable CORS for all routes
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:4000',
-    'https://ecommerce-frontend-4gjt.onrender.com', // Your actual frontend URL
-    'https://ecommerce-backend-7lkk.onrender.com'  // Your backend URL
-  ],
+// Configure CORS with specific options
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:4000',
+      'https://ecommerce-frontend-4gjt.onrender.com',
+      'https://ecommerce-backend-7lkk.onrender.com'
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      console.log('CORS blocked for origin:', origin);
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+
+// Apply CORS to all routes
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', (req, res) => {
-  console.log('Preflight request received:', req.headers);
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).send();
-});
+app.options('*', cors(corsOptions));
 
 //database connection with mongodb 
 mongoose.connect(process.env.MONGODB_URI)
