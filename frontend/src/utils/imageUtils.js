@@ -11,13 +11,19 @@ export const normalizeImageUrl = (imageUrl) => {
     return imageUrl;
   }
   
-  // If the URL starts with /images, prepend the API URL
-  if (imageUrl.startsWith('/images')) {
-    return `${import.meta.env.VITE_API_URL}${imageUrl}`;
+  // Get the base URL from environment or use the current origin
+  const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+  
+  // Remove any leading slashes from the image path
+  const cleanImageUrl = imageUrl.startsWith('/') ? imageUrl.substring(1) : imageUrl;
+  
+  // If the URL already contains 'images', don't add it again
+  if (cleanImageUrl.includes('images/')) {
+    return `${baseUrl}/${cleanImageUrl}`;
   }
   
-  // If it's a relative path, assume it's in the images directory
-  return `${import.meta.env.VITE_API_URL}/images/${imageUrl}`;
+  // Otherwise, assume it's in the images directory
+  return `${baseUrl}/images/${cleanImageUrl}`;
 };
 
 /**
