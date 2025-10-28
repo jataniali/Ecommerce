@@ -3,7 +3,7 @@ import logo from '../assets/logo.jpg';
 import { FaShoppingCart, FaBars, FaTimes } from 'react-icons/fa';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShopContext } from '../context/ShopConext';
+import { ShopContext } from '../context/ShopContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

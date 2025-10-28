@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
-import { ShopContext } from '../../context/ShopConext';
+import { ShopContext } from '../../context/ShopContext';
 import ImageModal from '../ImageModal/ImageModal';
 
 const Productdisplay = (props) => {

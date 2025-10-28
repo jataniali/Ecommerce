@@ -1,11 +1,11 @@
 import React from 'react';
 import Navbar from './components/Navbar';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Shop from './pages/shop';
-import Shopcategory from './pages/shopcategory';
+import Shop from './pages/Shop';
+import Shopcategory from './pages/Shopcategory';
 import Product from './pages/Product.jsx';
 import Cart from './pages/cart';
-import Loginsignup from './pages/loginsignup';
+import Loginsignup from './pages/Loginsignup';
 import Footer from './components/Footer/Footer';
 import women_bunner from './assets/womencloth-banner.jpg';
 import men_bunner from './assets/menbanner2.jpg';

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { ShopContext } from '../context/ShopConext'
+import { ShopContext } from '../context/ShopContext'
 import {  FaChevronDown} from "react-icons/fa";
 import Items from '../components/Items/Items';
 import { Link } from 'react-router-dom';
