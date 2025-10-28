@@ -13,10 +13,28 @@ import cors from 'cors'
 
 const app=express()
 app.use(express.json())
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4000',
+  'https://ecommerce-frontend-9w4c.onrender.com', // Add your production frontend URL here
+  'https://ecommerce-backend-9w4c.onrender.com'  // Add your production backend URL here
+];
+
 app.use(cors({
-  origin: ['https://your-frontend-url.onrender.com', 'http://localhost:5173'],
-  credentials: true
-}))
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 //database connection with mongodb 
 mongoose.connect(process.env.MONGODB_URI)
@@ -43,9 +61,13 @@ const __dirname = path.dirname(__filename);
 //creating upload endpoint for images
 app.use('/images', express.static(path.join(__dirname, '/uploads/images')));
 app.post('/upload',upload.single('product'),(req,res)=>{
+const baseUrl = process.env.NODE_ENV === 'production' 
+  ? process.env.BACKEND_URL || `http://localhost:${PORT}`
+  : `http://localhost:${PORT}`;
+
 res.json({
 success:1,
-image_url:`http://localhost:${PORT}/images/${req.file.filename}`,
+image_url:`${baseUrl}/images/${req.file.filename}`,
 message:"Image uploaded successfully"
 })
 })
