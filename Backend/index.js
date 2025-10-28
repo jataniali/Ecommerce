@@ -568,8 +568,23 @@ if (fs.existsSync(frontendPath)) {
     '/login'
   ];
   
+  // API routes that should be handled by the server
+  const apiRoutes = [
+    '/api',
+    '/auth',
+    '/upload',
+    '/images',
+    '/allproducts',
+    '/newcollections',
+    '/popular',
+    '/addtocart',
+    '/removefromcart',
+    '/getcart',
+    '/signup',
+    '/login'
+  ];
+
   // Serve index.html for all non-API and non-static file requests
-  // This handles client-side routing for all routes including /product/:id
   app.get('*', (req, res, next) => {
     // Skip API routes
     if (apiRoutes.some(route => req.path.startsWith(route))) {
@@ -609,18 +624,24 @@ if (fs.existsSync(frontendPath)) {
 } else {
   console.warn('Frontend build not found at:', frontendPath);
   
-  // In development, serve a helpful message
-  app.get('*', (req, res, next) => {
+  // In development, serve a helpful message for non-API routes
+  app.use((req, res, next) => {
     // Skip API routes
-    if (req.path.startsWith('/api/')) {
+    if (apiRoutes.some(route => req.path.startsWith(route))) {
       return next();
     }
+    
     res.status(404).send(`
       <h1>Frontend Build Not Found</h1>
       <p>Please build your frontend with 'npm run build' in the frontend directory.</p>
       <p>Current NODE_ENV: ${process.env.NODE_ENV || 'development'}</p>
       <p>Looking for frontend at: ${frontendPath}</p>
     `);
+  });
+  
+  // Handle 404 for API routes in development
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
   });
 }
 
