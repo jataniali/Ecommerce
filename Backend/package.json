@@ -18,5 +18,8 @@
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
     "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    "terser": "^5.44.0"
   }
 }
