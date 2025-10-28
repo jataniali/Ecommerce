@@ -95,42 +95,71 @@ app.use('/images', express.static(uploadsDir, {
   etag: true,
   lastModified: true,
   maxAge: '1y',
-  setHeaders: (res, path) => {
-    res.set('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+  setHeaders: (res, filePath) => {
+    // Cache images for 1 year
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    
+    // Set proper content type based on file extension
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml'
+    };
+    
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
   }
 }));
 
-// Add a route to handle image requests with case-insensitive matching
+// Fallback image handler for case-insensitive matching
 app.get('/images/:imageName', (req, res) => {
   const imageName = req.params.imageName;
-  const imagePath = path.join(uploadsDir, imageName);
+  const uploadsDir = path.join(__dirname, 'uploads', 'images');
   
-  // Check if file exists with case-insensitive matching
-  if (fs.existsSync(imagePath)) {
-    res.sendFile(imagePath, {
+  // First try exact match
+  const exactPath = path.join(uploadsDir, imageName);
+  if (fs.existsSync(exactPath)) {
+    return res.sendFile(exactPath, {
       headers: {
-        'Cache-Control': 'public, max-age=31536000' // 1 year cache
+        'Cache-Control': 'public, max-age=31536000'
       }
     });
-  } else {
-    // Try case-insensitive search
+  }
+  
+  // If no exact match, try case-insensitive search
+  try {
     const files = fs.readdirSync(uploadsDir);
     const foundFile = files.find(file => 
       file.toLowerCase() === imageName.toLowerCase()
     );
     
     if (foundFile) {
-      res.sendFile(path.join(uploadsDir, foundFile), {
+      return res.sendFile(path.join(uploadsDir, foundFile), {
         headers: {
-          'Cache-Control': 'public, max-age=31536000' // 1 year cache
+          'Cache-Control': 'public, max-age=31536000'
         }
       });
-    } else {
-      res.status(404).json({
-        success: 0,
-        message: 'Image not found'
-      });
     }
+    
+    // If still not found, return 404 with a helpful message
+    console.warn(`Image not found: ${imageName}`);
+    res.status(404).json({ 
+      error: 'Image not found',
+      requested: imageName,
+      available: files.slice(0, 10) // Show first 10 available files for debugging
+    });
+    
+  } catch (error) {
+    console.error('Error serving image:', error);
+    res.status(500).json({ 
+      error: 'Error serving image',
+      details: error.message 
+    });
   }
 });
 
@@ -454,15 +483,16 @@ if (fs.existsSync(frontendPath)) {
     '/login'
   ];
   
-  // Handle client-side routing - return index.html for all non-API GET requests
+  // Serve index.html for all non-API and non-static file requests
+  // This handles client-side routing for all routes including /product/:id
   app.get('*', (req, res, next) => {
     // Skip API routes
     if (apiRoutes.some(route => req.path.startsWith(route))) {
       return next();
     }
     
-    // Skip static files with extensions
-    if (req.path.includes('.')) {
+    // Skip static files with extensions (like .js, .css, .jpg, etc.)
+    if (req.path.includes('.') && !req.path.endsWith('/')) {
       return next();
     }
     
@@ -474,6 +504,12 @@ if (fs.existsSync(frontendPath)) {
       }
     });
   });
+  
+  // Handle 404 for API routes
+  app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
+  
 } else {
   console.warn('Frontend build not found at:', frontendPath);
   

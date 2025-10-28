@@ -32,7 +32,15 @@ export default defineConfig(({ command, mode }) => {
         '/signup': 'http://localhost:4000',
         '/login': 'http://localhost:4000',
         '/images': 'http://localhost:4000',
-      }
+        // Add a catch-all route for client-side routing in development
+        '^/product/.*': {
+          target: 'http://localhost:4000',
+          changeOrigin: true,
+          secure: false,
+        }
+      },
+      // Enable history API fallback for SPA routing in development
+      historyApiFallback: true,
     },
     build: {
       outDir: 'dist',
@@ -41,13 +49,34 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
+        },
+        output: {
+          // Ensure consistent hashing for better caching
+          entryFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
         }
-      }
+      },
+      // Enable source maps for better debugging in production
+      sourcemap: true,
+      // Minify the output for better performance
+      minify: 'terser',
+      // Enable gzip compression for assets
+      reportCompressedSize: true,
+      // Chunk size warning limit (in kbs)
+      chunkSizeWarningLimit: 1000,
     },
     resolve: {
       alias: {
         '@': resolve(__dirname, './src'),
       },
+    },
+    // Configure environment variables
+    define: {
+      'process.env': {},
+      'import.meta.env.MODE': JSON.stringify(mode),
+      'import.meta.env.PROD': isProduction,
+      'import.meta.env.DEV': !isProduction,
     },
   }
 })

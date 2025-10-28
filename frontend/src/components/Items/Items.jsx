@@ -19,16 +19,48 @@ const Items = (props) => {
 
   const [imageError, setImageError] = React.useState(false);
   const [imageLoading, setImageLoading] = React.useState(true);
+  const [currentImage, setCurrentImage] = React.useState('');
+
+  // Preprocess the image URL when the component mounts or when props.image changes
+  React.useEffect(() => {
+    if (props.image) {
+      const processedUrl = normalizeImageUrl(props.image);
+      console.log(`Processing image URL: ${props.image} -> ${processedUrl}`);
+      setCurrentImage(processedUrl);
+      setImageError(false);
+      setImageLoading(true);
+    }
+  }, [props.image]);
 
   const handleImageError = (e) => {
-    console.error('Error loading image:', props.image);
+    console.error('Error loading image:', {
+      originalUrl: props.image,
+      processedUrl: currentImage,
+      error: e
+    });
     setImageError(true);
-    e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+    // Only try to set the fallback if we haven't already tried it
+    if (e.target.src !== 'https://via.placeholder.com/300x200?text=Image+Not+Available') {
+      e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+    }
   };
 
   const handleImageLoad = () => {
+    console.log('Image loaded successfully:', currentImage);
     setImageLoading(false);
   };
+
+  // If we don't have an image URL, show a placeholder
+  if (!props.image) {
+    return (
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400">
+          <span>No image available</span>
+        </div>
+        {/* Rest of the component */}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
@@ -42,17 +74,24 @@ const Items = (props) => {
             <div className="animate-pulse w-full h-full bg-gray-200"></div>
           </div>
         )}
-        {!imageError ? (
-          <img 
-            src={normalizeImageUrl(props.image)} 
-            alt={props.name}
-            className={`w-full h-48 object-cover hover:opacity-90 transition-opacity ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-48 flex items-center justify-center bg-gray-100 text-gray-400">
+        <img 
+          key={currentImage} // Force re-render when image changes
+          src={currentImage}
+          alt={props.name || 'Product image'}
+          className={`w-full h-48 object-contain bg-white ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+          loading="lazy"
+          decoding="async"
+          style={{
+            minHeight: '12rem',
+            maxHeight: '12rem',
+            objectFit: 'contain',
+            padding: '0.5rem'
+          }}
+        />
+        {imageError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400">
             <span>Image not available</span>
           </div>
         )}
