@@ -421,18 +421,71 @@ res.json(userData.cartData)
 
 // Serve static files from the React app
 const frontendPath = path.join(__dirname, '../../frontend/dist');
+const indexPath = path.join(frontendPath, 'index.html');
+
 if (fs.existsSync(frontendPath)) {
   console.log('Serving static files from:', frontendPath);
-  app.use(express.static(frontendPath));
   
-  // The "catchall" handler: for any request that doesn't
-  // match one above, send back React's index.html file.
-  app.get('*', (req, res) => {
-    console.log('Serving index.html for:', req.originalUrl);
-    res.sendFile(path.join(frontendPath, 'index.html'));
+  // Serve static files with proper caching
+  app.use(express.static(frontendPath, {
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+      // Cache static assets for 1 year
+      if (path.endsWith('.js') || path.endsWith('.css') || path.match(/\.(jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+      }
+    }
+  }));
+  
+  // API routes that should be handled by the server
+  const apiRoutes = [
+    '/api/',
+    '/auth/',
+    '/upload',
+    '/images/',
+    '/allproducts',
+    '/newcollections',
+    '/popular',
+    '/addtocart',
+    '/removefromcart',
+    '/getcart',
+    '/signup',
+    '/login'
+  ];
+  
+  // Handle client-side routing - return index.html for all non-API GET requests
+  app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (apiRoutes.some(route => req.path.startsWith(route))) {
+      return next();
+    }
+    
+    // Skip static files with extensions
+    if (req.path.includes('.')) {
+      return next();
+    }
+    
+    console.log(`Serving index.html for client-side route: ${req.path}`);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error sending index.html:', err);
+        res.status(500).send('Error loading the application');
+      }
+    });
   });
 } else {
   console.warn('Frontend build not found at:', frontendPath);
+  
+  // In development, serve a helpful message
+  app.get('*', (req, res) => {
+    res.status(404).send(`
+      <h1>Frontend Build Not Found</h1>
+      <p>Please build your frontend with 'npm run build' in the frontend directory.</p>
+      <p>Current NODE_ENV: ${process.env.NODE_ENV || 'development'}</p>
+      <p>Looking for frontend at: ${frontendPath}</p>
+    `);
+  });
 }
 
 app.listen(PORT,(error)=>{
