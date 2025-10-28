@@ -419,11 +419,27 @@ let userData= await users.findOne({_id:req.user.id})
 res.json(userData.cartData)
 })
 
+// Serve static files from the React app
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendPath)) {
+  console.log('Serving static files from:', frontendPath);
+  app.use(express.static(frontendPath));
+  
+  // The "catchall" handler: for any request that doesn't
+  // match one above, send back React's index.html file.
+  app.get('*', (req, res) => {
+    console.log('Serving index.html for:', req.originalUrl);
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+} else {
+  console.warn('Frontend build not found at:', frontendPath);
+}
+
 app.listen(PORT,(error)=>{
-if(!error){
-console.log("Server is Successfully Running,and App is listening on port "+ PORT)
-}
-else{
-console.log("Error occurred, server can't start",error);
-}
+  if(!error){
+    console.log("Server is Successfully Running, and App is listening on port "+ PORT);
+    console.log("NODE_ENV:", process.env.NODE_ENV || 'development');
+  } else {
+    console.log("Error occurred, server can't start", error);
+  }
 })
