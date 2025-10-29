@@ -64,71 +64,185 @@ const Addproduct = () => {
     clearError('image');
   };
 
-  // ✅ Upload image helper
+  // ✅ Upload image helper with improved error handling
   const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append('product', file);
 
     try {
+      console.log('Starting file upload...', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+
+      // Show upload progress
+      const toastId = toast.loading('Uploading image...');
+      
       const response = await fetch(`${API_URL}/upload`, { 
         method: 'POST', 
         body: formData,
-        // Don't set Content-Type header, let the browser set it with the correct boundary
+        // Let the browser set the Content-Type with the correct boundary
       });
+
+      const data = await response.json().catch(() => ({}));
       
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Upload error response:', errorData);
-        throw new Error(`Upload failed with status ${response.status}`);
+        console.error('Upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          data
+        });
+        
+        let errorMessage = data.message || `Upload failed with status ${response.status}`;
+        
+        // Handle specific error cases
+        if (response.status === 413) {
+          errorMessage = 'File is too large. Maximum size is 5MB.';
+        } else if (response.status === 400 && data.code === 'LIMIT_FILE_TYPE') {
+          errorMessage = 'Only image files are allowed (JPEG, PNG, etc.)';
+        }
+        
+        toast.update(toastId, {
+          render: errorMessage,
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000,
+          closeOnClick: true,
+          pauseOnHover: true
+        });
+        
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      if (!data.image_url) {
-        throw new Error('No image URL returned from server');
+      if (!data.success) {
+        const errorMessage = data.message || 'Upload failed. Please try again.';
+        toast.update(toastId, {
+          render: errorMessage,
+          type: 'error',
+          isLoading: false,
+          autoClose: 5000
+        });
+        throw new Error(errorMessage);
       }
 
-      return data.image_url;
+      console.log('Upload successful:', {
+        imageUrl: data.image_url,
+        fileInfo: data.file
+      });
+
+      toast.update(toastId, {
+        render: 'Image uploaded successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000
+      });
+
+      return data.image_url || data.url; // Handle both response formats
+      
     } catch (error) {
-      console.error('Upload error:', error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+      console.error('Upload error:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      if (!toast.isActive(toastId)) {
+        toast.error(error.message || 'Failed to upload image');
+      }
+      
+      throw error; // Re-throw to be caught by the form submission
     }
   };
 
-  // ✅ Handle form submission
+  // ✅ Handle form submission with better error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return toast.error('Please fill in all required fields correctly');
+    if (!validateForm()) return;
 
     setIsLoading(true);
+    const toastId = toast.loading('Adding product...');
+    
     try {
-      const imageUrl = productDetails.image instanceof File
-        ? await uploadImage(productDetails.image)
-        : productDetails.image;
+      // Upload image first if it's a File object
+      let imageUrl = productDetails.image;
+      if (productDetails.image instanceof File) {
+        try {
+          imageUrl = await uploadImage(productDetails.image);
+        } catch (error) {
+          // uploadImage already shows the error toast
+          throw new Error('Failed to upload image');
+        }
+      }
 
+      // Prepare product data
       const productData = {
-        ...productDetails,
+        name: productDetails.name.trim(),
         image: imageUrl,
-        old_price: productDetails.old_price || (parseFloat(productDetails.new_price) * 1.2).toFixed(2),
+        category: productDetails.category,
+        new_price: parseFloat(productDetails.new_price).toFixed(2),
+        old_price: productDetails.old_price 
+          ? parseFloat(productDetails.old_price).toFixed(2)
+          : (parseFloat(productDetails.new_price) * 1.2).toFixed(2),
+        description: productDetails.description.trim()
       };
 
+      console.log('Submitting product data:', productData);
+
+      // Submit product data
       const response = await fetch(`${API_URL}/addproduct`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(productData),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to add product');
+      const data = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to add product (${response.status})`);
+      }
 
-      toast.success('Product added successfully!');
-      setProductDetails({ name: "", image: "", category: "women", new_price: "", old_price: "", description: "" });
+      // Show success message
+      toast.update(toastId, {
+        render: 'Product added successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2000
+      });
+
+      // Reset form
+      setProductDetails({ 
+        name: "", 
+        image: "", 
+        category: "women", 
+        new_price: "", 
+        old_price: "", 
+        description: "" 
+      });
       setPreviewImage(null);
+      if (document.getElementById('file-upload')) {
+        document.getElementById('file-upload').value = '';
+      }
 
+      // Redirect after a short delay
       setTimeout(() => navigate('/listproduct'), 1500);
+      
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.message || 'An error occurred. Please try again.');
+      console.error('Error adding product:', error);
+      
+      toast.update(toastId, {
+        render: error.message || 'Failed to add product. Please try again.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000
+      });
     } finally {
+      if (toast.isActive(toastId)) {
+        toast.dismiss(toastId);
+      }
       setIsLoading(false);
     }
   };

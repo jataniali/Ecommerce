@@ -63,22 +63,44 @@ app.get('/', (req, res) => {
   res.send('Hello from Backend');
 });
 
-// ✅ Configure Cloudinary
+// ✅ Configure Cloudinary with debug logging
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+}).logger(({ type, message }) => {
+  console.log(`[Cloudinary] ${type}: ${message}`);
 });
 
-// ✅ Cloudinary Storage setup
+// ✅ Cloudinary Storage setup with better configuration
 const storage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
     folder: 'ecommerce-products',
     allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
+    transformation: [
+      { width: 800, crop: 'limit', quality: 'auto' },
+      { fetch_format: 'auto' }
+    ]
   },
+  filename: function (req, file, cb) {
+    cb(null, `product-${Date.now()}-${file.originalname}`);
+  }
 });
-const upload = multer({ storage });
+
+// Configure multer with file size limit and file filter
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+}).single('product');
 
 // ✅ Product Schema
 const Product = mongoose.model('Product', {
@@ -243,18 +265,62 @@ app.get('/popular', async (req, res) => {
   res.send(popular);
 });
 
-// ✅ Upload image to Cloudinary
-app.post('/upload', upload.single('product'), async (req, res) => {
-  try {
-    res.json({
-      success: 1,
-      image_url: req.file.path, // Cloudinary auto adds this URL
-      message: 'Image uploaded successfully',
-    });
-  } catch (error) {
-    console.error(' Cloudinary upload error:', error);
-    res.status(500).json({ success: 0, message: 'Upload failed' });
-  }
+// ✅ Upload image to Cloudinary with better error handling
+app.post('/upload', (req, res) => {
+  upload(req, res, async (err) => {
+    try {
+      // Handle multer errors
+      if (err instanceof multer.MulterError) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ 
+          success: false, 
+          message: err.message || 'File upload error',
+          code: err.code
+        });
+      } else if (err) {
+        console.error('Upload error:', err);
+        return res.status(400).json({ 
+          success: false, 
+          message: err.message || 'Error uploading file'
+        });
+      }
+
+      // Check if file exists
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No file uploaded or file is empty' 
+        });
+      }
+
+      console.log('File uploaded to Cloudinary:', {
+        originalname: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        cloudinaryUrl: req.file.path
+      });
+      
+      // Return the Cloudinary URL
+      res.json({
+        success: true,
+        image_url: req.file.path,
+        message: 'Image uploaded successfully',
+        file: {
+          originalname: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Upload processing error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to process upload',
+        error: error.message 
+      });
+    }
+  });
 });
 
 // ✅ Serve frontend build
