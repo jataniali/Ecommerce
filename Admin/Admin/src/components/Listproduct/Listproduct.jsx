@@ -5,8 +5,8 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Use environment variable or fallback to localhost for development
-// Use relative URL with /api prefix to match proxy configuration
-const API_URL = '/api';
+// Use the full backend URL for production
+const API_URL = 'https://ecommerce-backend-7lkk.onrender.com';
 
 const Listproduct = () => {
   const [products, setProducts] = useState([]);

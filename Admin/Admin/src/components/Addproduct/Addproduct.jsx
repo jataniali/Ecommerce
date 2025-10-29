@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Use relative URL with /api prefix to match proxy configuration
-const API_URL = '/api';
+// Use the full backend URL for production
+const API_URL = 'https://ecommerce-backend-7lkk.onrender.com';
 
 const Addproduct = () => {
   const navigate = useNavigate();
@@ -69,14 +69,29 @@ const Addproduct = () => {
     const formData = new FormData();
     formData.append('product', file);
 
-    const response = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
-    const data = await response.json();
+    try {
+      const response = await fetch(`${API_URL}/upload`, { 
+        method: 'POST', 
+        body: formData,
+        // Don't set Content-Type header, let the browser set it with the correct boundary
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Upload error response:', errorData);
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
 
-    if (!response.ok || !data.success || !data.image_url) {
-      throw new Error(data.message || 'Failed to upload image');
+      const data = await response.json();
+      if (!data.image_url) {
+        throw new Error('No image URL returned from server');
+      }
+
+      return data.image_url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw new Error(`Failed to upload image: ${error.message}`);
     }
-
-    return data.image_url;
   };
 
   // ✅ Handle form submission
