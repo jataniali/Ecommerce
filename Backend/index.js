@@ -216,18 +216,19 @@ app.post('/login', async (req, res) => {
 });
 
 // ✅ Enhanced fetch user middleware with additional checks
-const fetchuser = (req, res, next) => {
-  // Check for token in both header and query (for WebSocket compatibility)
-  const token = req.header('token') || req.query.token;
-  
-  if (!token) {
-    return res.status(401).json({ 
-      success: false,
-      error: 'Authentication required: No token provided' 
-    });
-  }
-
+const fetchuser = async (req, res, next) => {
   try {
+    // Check for token in both header, query, and body (for maximum compatibility)
+    const token = req.header('token') || req.query.token || (req.body && req.body.token);
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Authentication required: No token provided',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
     // Verify token
     const data = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     
@@ -235,7 +236,18 @@ const fetchuser = (req, res, next) => {
     if (!data || !data.user || !data.user.id) {
       return res.status(401).json({
         success: false,
-        error: 'Invalid token: User data missing'
+        error: 'Invalid token: User data missing',
+        code: 'INVALID_TOKEN'
+      });
+    }
+    
+    // Verify user exists in database
+    const userExists = await users.findById(data.user.id);
+    if (!userExists) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
       });
     }
     
@@ -244,9 +256,29 @@ const fetchuser = (req, res, next) => {
     next();
   } catch (error) {
     console.error('Token verification error:', error.message);
+    
+    // Handle specific JWT errors
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Session expired. Please log in again.',
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token. Please log in again.',
+        code: 'INVALID_TOKEN'
+      });
+    }
+    
+    // For other errors
     return res.status(401).json({
       success: false,
-      error: 'Please authenticate using a valid token',
+      error: 'Authentication failed',
+      code: 'AUTH_FAILED',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

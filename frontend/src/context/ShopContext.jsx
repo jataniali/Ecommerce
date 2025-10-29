@@ -90,41 +90,77 @@ fetchProducts();
         );
     };
 
+// Helper function to check authentication
+const checkAuth = () => {
+    if (typeof window === 'undefined') return false;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    try {
+        // Simple token validation (actual validation happens on the server)
+        const tokenParts = token.split('.');
+        return tokenParts.length === 3;
+    } catch (e) {
+        return false;
+    }
+};
+
 const addtocart = async (itemId) => {
     try {
         // Check if we're in a browser environment
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined') {
+            console.error('Not in a browser environment');
+            return;
+        }
 
-        const token = localStorage.getItem('token');
-        
         // Check authentication
-        if (!token) {
+        if (!checkAuth()) {
             if (window.confirm('You need to log in to add items to your cart. Go to login page?')) {
+                // Clear any invalid tokens
+                localStorage.removeItem('token');
                 window.location.href = '/login';
             }
             return;
         }
 
-        // Make the API call
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/addtocart`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'token': token
-            },
-            body: JSON.stringify({ itemId: String(itemId) })
-        });
+        const token = localStorage.getItem('token');
+        
+        // Make the API call with error handling for network issues
+        let response;
+        try {
+            response = await fetch(`${import.meta.env.VITE_API_URL}/addtocart`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': token,
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
+                body: JSON.stringify({ 
+                    itemId: String(itemId),
+                    timestamp: new Date().getTime() // Prevent caching
+                })
+            });
+        } catch (networkError) {
+            console.error('Network error:', networkError);
+            throw new Error('Network error. Please check your connection and try again.');
+        }
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({
+            success: false,
+            error: 'Invalid server response'
+        }));
         
         if (!response.ok) {
             if (response.status === 401) {
-                // Token is invalid or expired
+                // Clear invalid token and redirect to login
                 localStorage.removeItem('token');
                 window.location.href = '/login';
                 return;
             }
-            throw new Error(data.message || 'Failed to add to cart');
+            throw new Error(data.error || 'Failed to add to cart');
         }
 
         // Update cart data if successful
