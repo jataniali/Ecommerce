@@ -40,10 +40,15 @@ fetchProducts();
 
     // Fetch cart data when component mounts and when token changes
     useEffect(() => {
-        const fetchCartData = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+        const token = localStorage.getItem('token');
+        
+        // Clear cart if no token exists
+        if (!token) {
+            setCartitems({});
+            return;
+        }
 
+        const fetchCartData = async () => {
             try {
                 const response = await fetch(`${import.meta.env.VITE_API_URL}/getcart`, {
                     method: 'POST',
@@ -60,14 +65,18 @@ fetchProducts();
                 const cartData = await response.json();
                 if (cartData) {
                     setCartitems(cartData);
+                } else {
+                    setCartitems({});
                 }
             } catch (error) {
                 console.error('Error fetching cart data:', error);
+                // Clear cart on error or invalid token
+                setCartitems({});
             }
         };
 
         fetchCartData();
-    }, []); 
+    }, [localStorage.getItem('token')]); // Add dependency on token
 
     // Helper function to find a product by ID (handles both string and number IDs)
     const findProductById = (id) => {
@@ -215,6 +224,31 @@ const addtocart = async (itemId) => {
         }
         return totalitem;
     };
+
+    const { cartTotal, cartItemsCount, hasItems } = useMemo(() => {
+        const token = localStorage.getItem('token');
+        // If not logged in, return empty cart
+        if (!token) {
+          return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
+        }
+        
+        if (!Array.isArray(all_products) || !cartitems) {
+          return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
+        }
+
+        let totalamount = 0;
+        let totalitem = 0;
+        for (const itemId in cartitems) {
+            if (cartitems[itemId] > 0) {
+                const product = findProductById(itemId);
+                if (product && product.new_price) {
+                    totalamount += product.new_price * cartitems[itemId];
+                }
+                totalitem += cartitems[itemId];
+            }
+        }
+        return { cartTotal: totalamount, cartItemsCount: totalitem, hasItems: totalitem > 0 };
+    }, [cartitems, all_products, localStorage.getItem('token')]);
 
     const contextValue = { 
         all_products, 
