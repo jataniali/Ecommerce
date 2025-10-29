@@ -9,6 +9,12 @@ const Shopcategory = (props) => {
 const{all_products}=useContext(ShopContext)
   return (
 <div className="min-h-screen bg-gray-50">
+  {/* Debug info */}
+  {console.log('Current props:', { 
+    category: props.category,
+    banner: props.bunner 
+  })}
+  
   {/* Enhanced Banner Section */}
   <div className="relative w-full h-72 overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
     <img
@@ -18,7 +24,7 @@ const{all_products}=useContext(ShopContext)
     />
     <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10">
       <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">
-        {props.category.charAt(0).toUpperCase() + props.category.slice(1)}
+        {props.category === 'men' ? "Men's" : props.category.charAt(0).toUpperCase() + props.category.slice(1)}
       </h1>
       <p className="text-xl opacity-90 drop-shadow-md">
         Discover amazing products in this category
@@ -46,15 +52,30 @@ const{all_products}=useContext(ShopContext)
         const productCategory = item.category.toString().toLowerCase().trim();
         const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
         
-        // Debug log for men's category
+        // Handle men's category
         if (currentCategory === 'men' || currentCategory === "men's") {
-          const isMatch = ['men', 'mens', "men's", "men's clothing"].includes(productCategory);
-          console.log(`Checking men's product:`, { 
-            name: item.name, 
-            productCategory, 
-            isMatch,
-            currentCategory
-          });
+          // First try direct match with 'men' (as seen in the database)
+          if (productCategory === 'men') {
+            console.log(`Men's product matched:`, item.name);
+            return true;
+          }
+          
+          // Fallback to other variations
+          const menCategories = [
+            'mens', "men's", "men's clothing", 
+            'man', "man's", 'menswear', "men's wear",
+            'male', 'mens fashion', "men's fashion"
+          ];
+          
+          const isMatch = menCategories.includes(productCategory);
+          
+          if (isMatch) {
+            console.log(`Men's product matched (variation):`, { 
+              name: item.name,
+              productCategory 
+            });
+          }
+          
           return isMatch;
         }
         
