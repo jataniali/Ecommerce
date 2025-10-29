@@ -215,17 +215,40 @@ app.post('/login', async (req, res) => {
   res.json({ success: true, token });
 });
 
-// ✅ Fetch user middleware
-const fetchuser = async (req, res, next) => {
-  const token = req.header('token');
-  if (!token) return res.status(401).send({ error: 'Please authenticate using a valid token' });
+// ✅ Enhanced fetch user middleware with additional checks
+const fetchuser = (req, res, next) => {
+  // Check for token in both header and query (for WebSocket compatibility)
+  const token = req.header('token') || req.query.token;
+  
+  if (!token) {
+    return res.status(401).json({ 
+      success: false,
+      error: 'Authentication required: No token provided' 
+    });
+  }
 
   try {
+    // Verify token
     const data = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    
+    // Additional check for required user data
+    if (!data || !data.user || !data.user.id) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token: User data missing'
+      });
+    }
+    
+    // Attach user to request
     req.user = data.user;
     next();
   } catch (error) {
-    res.status(401).send({ error: 'Please authenticate using a valid token' });
+    console.error('Token verification error:', error.message);
+    return res.status(401).json({
+      success: false,
+      error: 'Please authenticate using a valid token',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

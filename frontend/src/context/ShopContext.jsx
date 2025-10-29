@@ -40,15 +40,15 @@ fetchProducts();
 
     // Fetch cart data when component mounts and when token changes
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        
-        // Clear cart if no token exists
-        if (!token) {
-            setCartitems({});
-            return;
-        }
-
         const fetchCartData = async () => {
+            // Ensure we're in a browser environment
+            if (typeof window === 'undefined') return;
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setCartitems({});
+                return;
+            }
             try {
                 const response = await fetch(`${import.meta.env.VITE_API_URL}/getcart`, {
                     method: 'POST',
@@ -92,16 +92,36 @@ fetchProducts();
 
 const addtocart = async (itemId) => {
     try {
+        // First check if we're in a browser environment
+        if (typeof window === 'undefined') {
+            console.error('Not in a browser environment');
+            return;
+        }
+
+        // Check for token in localStorage
         const token = localStorage.getItem('token');
         
         if (!token) {
-            // Show a user-friendly message on both mobile and desktop
-            if (window.alert) {
-                alert('Please log in to add items to your cart');
-            } else if (window.confirm) {
-                // Fallback for mobile browsers
-                window.confirm('Please log in to add items to your cart');
+            // Use window.alert for better mobile compatibility
+            if (typeof window !== 'undefined' && window.alert) {
+                window.alert('Please log in to add items to your cart');
             }
+            // Force a page reload to ensure clean state
+            window.location.href = '/login';
+            return;
+        }
+
+        // Additional verification - try to decode the token
+        try {
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+                throw new Error('Invalid token format');
+            }
+            // This is a simple check - actual verification happens on the server
+        } catch (tokenError) {
+            console.error('Invalid token format:', tokenError);
+            localStorage.removeItem('token');
+            window.location.href = '/login';
             return;
         }
 
