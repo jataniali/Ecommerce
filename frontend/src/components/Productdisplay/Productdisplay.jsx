@@ -117,9 +117,21 @@ if (!product) {
       </div>
 
       {/* Add to Cart Button */}
-      <div onClick={()=>addtocart(product.id)}
-      className="pt-3 sm:pt-4">
-        <button className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base">
+      <div className="pt-3 sm:pt-4">
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            if (!token) {
+              alert('Please log in to add items to your cart');
+              // Optionally redirect to login page:
+              // window.location.href = '/login';
+              return;
+            }
+            addtocart(product.id);
+          }}
+          className="w-full px-6 sm:px-8 py-3 sm:py-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl text-sm sm:text-base"
+        >
           ADD TO CART
         </button>
       </div>
