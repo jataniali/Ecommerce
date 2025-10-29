@@ -63,15 +63,19 @@ app.get('/', (req, res) => {
   res.send('Hello from Backend');
 });
 
-// ✅ Configure Cloudinary with debug logging
+// ✅ Configure Cloudinary
+console.log('Initializing Cloudinary...');
+console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
+console.log('API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true
-}).logger(({ type, message }) => {
-  console.log(`[Cloudinary] ${type}: ${message}`);
 });
+
+console.log('Cloudinary configured successfully');
 
 // ✅ Cloudinary Storage setup with better configuration
 const storage = new CloudinaryStorage({
