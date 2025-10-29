@@ -153,12 +153,25 @@ app.post('/removeproduct', async (req, res) => {
 // ✅ Get All Products
 app.get('/allproducts', async (req, res) => {
   try {
-    let products = await Product.find({});
-    console.log('📦 All products fetched successfully');
-    res.send(products);
+    console.log('📦 Fetching all products...');
+    let products = await Product.find({}).lean();
+    
+    // Ensure all products have both _id and id fields for compatibility
+    const formattedProducts = products.map(product => ({
+      ...product,
+      id: product._id.toString(), // Ensure id is a string
+      _id: product._id.toString() // Ensure _id is a string
+    }));
+    
+    console.log(`✅ Fetched ${formattedProducts.length} products successfully`);
+    res.json(formattedProducts);
   } catch (error) {
     console.error('❌ Error fetching products:', error);
-    res.status(500).json({ success: false, message: 'Error fetching products' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching products',
+      error: error.message 
+    });
   }
 });
 
