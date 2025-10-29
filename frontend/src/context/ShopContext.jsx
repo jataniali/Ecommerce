@@ -95,10 +95,13 @@ const addtocart = async (itemId) => {
         const token = localStorage.getItem('token');
         
         if (!token) {
-            // Show a user-friendly message and redirect to login
-            alert('Please log in to add items to your cart');
-            // Optionally, you can redirect to login page
-            // window.location.href = '/login';
+            // Show a user-friendly message on both mobile and desktop
+            if (window.alert) {
+                alert('Please log in to add items to your cart');
+            } else if (window.confirm) {
+                // Fallback for mobile browsers
+                window.confirm('Please log in to add items to your cart');
+            }
             return;
         }
 
