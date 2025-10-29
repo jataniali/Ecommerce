@@ -137,22 +137,25 @@ const addtocart = async (itemId) => {
             return;
         }
         
+        // Create a clean headers object
+        const headers = {
+            'Content-Type': 'application/json',
+            'token': token
+        };
+        
         // Make the API call with error handling for network issues
         let response;
         try {
+            const requestBody = {
+                itemId: String(itemId),
+                timestamp: new Date().getTime() // Prevent caching
+            };
+            
             response = await fetch(`${import.meta.env.VITE_API_URL}/addtocart`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token,
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                },
-                body: JSON.stringify({ 
-                    itemId: String(itemId),
-                    timestamp: new Date().getTime() // Prevent caching
-                })
+                headers: headers,
+                body: JSON.stringify(requestBody),
+                cache: 'no-store' // Prevent caching at the fetch API level
             });
         } catch (networkError) {
             console.error('Network error:', networkError);

@@ -23,9 +23,21 @@ const Navbar = () => {
   }, []);
   
   // Handle logout
-  const handleLogoutClick = () => {
-    handleLogout();
-    navigate('/');
+  const handleLogoutClick = async () => {
+    try {
+      // Clear any cart-related data
+      localStorage.removeItem('cart');
+      
+      // Call the context's handleLogout
+      handleLogout();
+      
+      // Force a full page reload to ensure all state is reset
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still try to redirect even if there's an error
+      window.location.href = '/';
+    }
   };
   // Scroll handler is now in useEffect
 
