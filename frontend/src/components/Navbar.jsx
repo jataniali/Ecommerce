@@ -137,36 +137,49 @@ className="h-10 w-10 rounded-full object-cover"
                       { 
                         name: 'Logout', 
                         path: '#',
-                        onClick: handleLogoutClick
+                        action: handleLogoutClick
                       }
                     ] 
                   : [
                       { 
                         name: 'Login', 
                         path: '/login',
-                        onClick: () => setIsMenuOpen(false)
+                        action: () => setIsMenuOpen(false)
                       }
                     ]
                 ),
                 { 
                   name: `Cart (${gettotalcartitems()})`, 
                   path: '/cart',
-                  onClick: () => setIsMenuOpen(false)
+                  action: () => setIsMenuOpen(false)
                 }
-              ].map(({ name, path }) => (
+              ].map(({ name, path, action }) => (
                 <li key={name}>
-                  <Link 
-                    to={path}
-                    className={`block py-2 px-3 rounded-md text-gray-700 hover:bg-gray-100 ${activeNav === name ? 'text-blue-600 font-medium' : ''}`}
-                    onClick={(e) => {
-                      if (path === '#') e.preventDefault();
-                      setActiveNav(name);
-                      setIsMenuOpen(false);
-                      if (onClick) onClick(e);
-                    }}
-                  >
-                    {name}
-                  </Link>
+                  {path === '#' ? (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActiveNav(name);
+                        setIsMenuOpen(false);
+                        if (action) action();
+                      }}
+                      className={`w-full text-left py-2 px-3 rounded-md text-gray-700 hover:bg-gray-100 ${activeNav === name ? 'text-blue-600 font-medium' : ''}`}
+                    >
+                      {name}
+                    </button>
+                  ) : (
+                    <Link 
+                      to={path}
+                      className={`block py-2 px-3 rounded-md text-gray-700 hover:bg-gray-100 ${activeNav === name ? 'text-blue-600 font-medium' : ''}`}
+                      onClick={() => {
+                        setActiveNav(name);
+                        setIsMenuOpen(false);
+                        if (action) action();
+                      }}
+                    >
+                      {name}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
