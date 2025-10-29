@@ -18,45 +18,29 @@ const PORT = process.env.PORT || 4000;
 // ✅ Middleware
 app.use(express.json());
 
-// Handle preflight requests
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
   'https://ecommerce-admin-hnzh.onrender.com',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
-  'http://localhost:4000',
-  'https://ecommerce-backend-7lkk.onrender.com'
 ];
 
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn('❌ Blocked CORS request from:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Origin',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'X-Auth-Token',
-    'token'
-  ],
-  maxAge: 86400, // cache preflight 24h
+  allowedHeaders: '*', // ✅ Allow all custom headers (includes 'token')
 };
 
-// Apply CORS globally (handles both OPTIONS + normal requests)
 app.use(cors(corsOptions));
-
-// Ensure Express can handle preflight requests automatically
-app.options('*', cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle preflights
 
 
 // ✅ MongoDB Connection
