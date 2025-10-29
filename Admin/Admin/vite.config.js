@@ -8,6 +8,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+    preview: {
+    host: true,
+    port: process.env.PORT || 3000,
+    strictPort: true,
+    allowedHosts: [
+      'ecommerce-admin-hnzh.onrender.com',
+      'localhost',
+      '127.0.0.1'
+    ]
+  },
   server: {
     proxy: {
       '/api': {
