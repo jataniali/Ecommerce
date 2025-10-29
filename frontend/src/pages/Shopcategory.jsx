@@ -43,22 +43,29 @@ const{all_products}=useContext(ShopContext)
       .filter(item => {
         if (!item.category) return false;
         
-        // Normalize category names for comparison
         const productCategory = item.category.toString().toLowerCase().trim();
         const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
         
-        // Special handling for different category name formats
-        if (currentCategory === 'men') {
-          return productCategory === 'men' || productCategory === 'mens';
-        }
-        if (currentCategory === 'women') {
-          return productCategory === 'women' || productCategory === 'womens';
-        }
-        if (currentCategory === 'electronics') {
-          return productCategory === 'electronics' || productCategory === 'electronic';
+        // Debug log for men's category
+        if (currentCategory === 'men' || currentCategory === "men's") {
+          const isMatch = ['men', 'mens', "men's", "men's clothing"].includes(productCategory);
+          console.log(`Checking men's product:`, { 
+            name: item.name, 
+            productCategory, 
+            isMatch,
+            currentCategory
+          });
+          return isMatch;
         }
         
-        // Default comparison
+        if (currentCategory === 'women' || currentCategory === "women's") {
+          return ['women', 'womens', "women's", "women's clothing"].includes(productCategory);
+        }
+        
+        if (currentCategory === 'electronics') {
+          return ['electronics', 'electronic'].includes(productCategory);
+        }
+        
         return productCategory === currentCategory;
       })
       .map((item, i) => (
