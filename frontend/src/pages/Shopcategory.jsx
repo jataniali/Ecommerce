@@ -12,7 +12,8 @@ const{all_products}=useContext(ShopContext)
   {/* Debug info */}
   {console.log('Current props:', { 
     category: props.category,
-    banner: props.bunner 
+    banner: props.bunner,
+    allCategories: [...new Set(all_products.map(p => p.category))]
   })}
   
   {/* Enhanced Banner Section */}
@@ -24,7 +25,9 @@ const{all_products}=useContext(ShopContext)
     />
     <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center z-10">
       <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">
-        {props.category === 'men' ? "Men's" : props.category.charAt(0).toUpperCase() + props.category.slice(1)}
+        {['men', 'mens', "men's"].includes(props.category.toLowerCase()) 
+          ? "Men's" 
+          : props.category.charAt(0).toUpperCase() + props.category.slice(1)}
       </h1>
       <p className="text-xl opacity-90 drop-shadow-md">
         Discover amazing products in this category
@@ -52,8 +55,8 @@ const{all_products}=useContext(ShopContext)
         const productCategory = item.category.toString().toLowerCase().trim();
         const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
         
-        // Handle men's category
-        if (currentCategory === 'men' || currentCategory === "men's") {
+        // Handle men's category variations
+        if (currentCategory === 'men' || currentCategory === "men's" || currentCategory === 'mens') {
           // First try direct match with 'men' (as seen in the database)
           if (productCategory === 'men') {
             console.log(`Men's product matched:`, item.name);
