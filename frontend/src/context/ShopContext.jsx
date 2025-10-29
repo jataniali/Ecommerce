@@ -70,13 +70,12 @@ fetchProducts();
                 }
             } catch (error) {
                 console.error('Error fetching cart data:', error);
-                // Clear cart on error or invalid token
                 setCartitems({});
             }
         };
 
         fetchCartData();
-    }, [localStorage.getItem('token')]); // Add dependency on token
+    }, [localStorage.getItem('token')]); 
 
     // Helper function to find a product by ID (handles both string and number IDs)
     const findProductById = (id) => {
@@ -202,53 +201,35 @@ const addtocart = async (itemId) => {
     };
 }
 
-    const gettotalcartamount = () => {
-        let totalamount = 0;
-        for (const itemId in cartitems) {
-            if (cartitems[itemId] > 0) {
-                const product = findProductById(itemId);
-                if (product && product.new_price) {
-                    totalamount += product.new_price * cartitems[itemId];
-                }
-            }
-        }
-        return totalamount;
-    };
+    // Calculate cart totals
+  const getCartTotals = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
+    }
+    
+    if (!Array.isArray(all_products) || !cartitems) {
+      return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
+    }
 
-    const gettotalcartitems = () => {
-        let totalitem = 0;
-        for (const item in cartitems) {
-            if (cartitems[item] > 0) {
-                totalitem += cartitems[item];
-            }
-        }
-        return totalitem;
-    };
+    let cartTotal = 0;
+    let cartItemsCount = 0;
+    let hasItems = false;
 
-    const { cartTotal, cartItemsCount, hasItems } = useMemo(() => {
-        const token = localStorage.getItem('token');
-        // If not logged in, return empty cart
-        if (!token) {
-          return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
-        }
-        
-        if (!Array.isArray(all_products) || !cartitems) {
-          return { cartTotal: 0, cartItemsCount: 0, hasItems: false };
-        }
+    for (const product of all_products) {
+      const productId = product.id || product._id;
+      const quantity = cartitems[productId] || 0;
+      if (quantity > 0) {
+        cartTotal += (product.new_price || 0) * quantity;
+        cartItemsCount += quantity;
+        hasItems = true;
+      }
+    }
 
-        let totalamount = 0;
-        let totalitem = 0;
-        for (const itemId in cartitems) {
-            if (cartitems[itemId] > 0) {
-                const product = findProductById(itemId);
-                if (product && product.new_price) {
-                    totalamount += product.new_price * cartitems[itemId];
-                }
-                totalitem += cartitems[itemId];
-            }
-        }
-        return { cartTotal: totalamount, cartItemsCount: totalitem, hasItems: totalitem > 0 };
-    }, [cartitems, all_products, localStorage.getItem('token')]);
+    return { cartTotal, cartItemsCount, hasItems };
+  };
+
+  const { cartTotal, cartItemsCount, hasItems } = getCartTotals();
 
     const contextValue = { 
         all_products, 
