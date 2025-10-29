@@ -92,61 +92,44 @@ fetchProducts();
 
 const addtocart = async (itemId) => {
     try {
-        // First check if we're in a browser environment
-        if (typeof window === 'undefined') {
-            console.error('Not in a browser environment');
-            return;
-        }
+        // Check if we're in a browser environment
+        if (typeof window === 'undefined') return;
 
-        // Check for token in localStorage
         const token = localStorage.getItem('token');
         
+        // Check authentication
         if (!token) {
-            // Use window.alert for better mobile compatibility
-            if (typeof window !== 'undefined' && window.alert) {
-                window.alert('Please log in to add items to your cart');
+            if (window.confirm('You need to log in to add items to your cart. Go to login page?')) {
+                window.location.href = '/login';
             }
-            // Force a page reload to ensure clean state
-            window.location.href = '/login';
             return;
         }
 
-        // Additional verification - try to decode the token
-        try {
-            const tokenParts = token.split('.');
-            if (tokenParts.length !== 3) {
-                throw new Error('Invalid token format');
-            }
-            // This is a simple check - actual verification happens on the server
-        } catch (tokenError) {
-            console.error('Invalid token format:', tokenError);
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-            return;
-        }
-
-        // Ensure itemId is a string
-        const itemIdStr = String(itemId);
-        
+        // Make the API call
         const response = await fetch(`${import.meta.env.VITE_API_URL}/addtocart`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'token': token,
-                'Accept': 'application/json'
+                'token': token
             },
-            body: JSON.stringify({ itemId: itemIdStr })
+            body: JSON.stringify({ itemId: String(itemId) })
         });
 
         const data = await response.json();
         
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to add to cart');
+            if (response.status === 401) {
+                // Token is invalid or expired
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+                return;
+            }
+            throw new Error(data.message || 'Failed to add to cart');
         }
 
+        // Update cart data if successful
         if (data.cartData) {
             setCartitems(data.cartData);
-            console.log('Item added to cart successfully');
         }
     } catch (error) {
         console.error('Error adding to cart:', error);

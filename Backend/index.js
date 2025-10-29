@@ -255,44 +255,33 @@ const fetchuser = (req, res, next) => {
 // ✅ Add to Cart
 app.post('/addtocart', fetchuser, async (req, res) => {
   try {
-    // Validate user
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-    }
+    const { itemId } = req.body;
     
-    // Validate itemId
-    if (!req.body.itemId) {
+    if (!itemId) {
       return res.status(400).json({ success: false, message: 'Item ID is required' });
     }
-    
-    const itemId = String(req.body.itemId);
-    
-    // Find user and initialize cartData if it doesn't exist
-    const userData = await users.findById(req.user.id);
-    if (!userData) {
+
+    const user = await users.findById(req.user.id);
+    if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    
-    // Initialize cartData if it doesn't exist or is not an object
-    if (!userData.cartData || typeof userData.cartData !== 'object') {
-      userData.cartData = {};
+
+    // Initialize cart if it doesn't exist
+    if (!user.cartData) {
+      user.cartData = {};
     }
-    
+
     // Update cart
-    userData.cartData[itemId] = (userData.cartData[itemId] || 0) + 1;
-    
-    // Save the updated user data
-    const updatedUser = await users.findByIdAndUpdate(
+    const itemIdStr = String(itemId);
+    user.cartData[itemIdStr] = (user.cartData[itemIdStr] || 0) + 1;
+
+    await users.findByIdAndUpdate(
       req.user.id,
-      { cartData: userData.cartData },
-      { new: true, runValidators: true }
+      { cartData: user.cartData },
+      { new: true }
     );
-    
-    res.json({ 
-      success: true, 
-      cartData: updatedUser.cartData || {},
-      message: 'Item added to cart successfully'
-    });
+
+    res.json({ success: true, cartData: user.cartData });
   } catch (error) {
     console.error('❌ Error in /addtocart:', error);
     res.status(500).json({ success: false, message: 'Error adding to cart' });
