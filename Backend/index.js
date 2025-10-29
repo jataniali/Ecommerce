@@ -255,18 +255,44 @@ const fetchuser = (req, res, next) => {
 // ✅ Add to Cart
 app.post('/addtocart', fetchuser, async (req, res) => {
   try {
+    // Validate user
     if (!req.user || !req.user.id) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
     
+    // Validate itemId
+    if (!req.body.itemId) {
+      return res.status(400).json({ success: false, message: 'Item ID is required' });
+    }
+    
+    const itemId = String(req.body.itemId);
+    
+    // Find user and initialize cartData if it doesn't exist
     const userData = await users.findById(req.user.id);
     if (!userData) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    const itemId = String(req.body.itemId);
+    
+    // Initialize cartData if it doesn't exist or is not an object
+    if (!userData.cartData || typeof userData.cartData !== 'object') {
+      userData.cartData = {};
+    }
+    
+    // Update cart
     userData.cartData[itemId] = (userData.cartData[itemId] || 0) + 1;
-    await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
-    res.json({ success: true, cartData: userData.cartData });
+    
+    // Save the updated user data
+    const updatedUser = await users.findByIdAndUpdate(
+      req.user.id,
+      { cartData: userData.cartData },
+      { new: true, runValidators: true }
+    );
+    
+    res.json({ 
+      success: true, 
+      cartData: updatedUser.cartData || {},
+      message: 'Item added to cart successfully'
+    });
   } catch (error) {
     console.error('❌ Error in /addtocart:', error);
     res.status(500).json({ success: false, message: 'Error adding to cart' });
@@ -276,25 +302,88 @@ app.post('/addtocart', fetchuser, async (req, res) => {
 // ✅ Remove from Cart
 app.post('/removefromcart', fetchuser, async (req, res) => {
   try {
-    const userData = await users.findById(req.user.id);
+    // Validate user
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    
+    // Validate itemId
+    if (!req.body.itemId) {
+      return res.status(400).json({ success: false, message: 'Item ID is required' });
+    }
+    
     const itemId = String(req.body.itemId);
-    if (userData.cartData[itemId] > 0) userData.cartData[itemId] -= 1;
-    await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
-    res.json({ success: true, cartData: userData.cartData });
+    
+    // Find user and initialize cartData if it doesn't exist
+    const userData = await users.findById(req.user.id);
+    if (!userData) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Initialize cartData if it doesn't exist or is not an object
+    if (!userData.cartData || typeof userData.cartData !== 'object') {
+      userData.cartData = {};
+    }
+    
+    // Only decrement if the item exists and quantity > 0
+    if (userData.cartData[itemId] > 0) {
+      userData.cartData[itemId] -= 1;
+      
+      // If quantity becomes zero, remove the item from cart
+      if (userData.cartData[itemId] <= 0) {
+        delete userData.cartData[itemId];
+      }
+      
+      // Save the updated user data
+      await users.findByIdAndUpdate(
+        req.user.id,
+        { cartData: userData.cartData },
+        { new: true, runValidators: true }
+      );
+    }
+    
+    // Get the latest cart data
+    const updatedUser = await users.findById(req.user.id);
+    
+    res.json({ 
+      success: true, 
+      cartData: updatedUser.cartData || {},
+      message: 'Item removed from cart successfully'
+    });
   } catch (error) {
-    console.error(' Error in /removefromcart:', error);
-    res.status(500).json({ success: false, message: 'Error removing from cart' });
+    console.error('❌ Error in /removefromcart:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error removing from cart',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
 // ✅ Get Cart Data
 app.post('/getcart', fetchuser, async (req, res) => {
   try {
+    // Validate user
     if (!req.user || !req.user.id) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
     
-    const userData = await users.findOne({ _id: req.user.id });
+    // Find user and initialize cartData if it doesn't exist
+    const userData = await users.findById(req.user.id);
+    if (!userData) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    // Initialize cartData if it doesn't exist or is not an object
+    if (!userData.cartData || typeof userData.cartData !== 'object') {
+      userData.cartData = {};
+      // Save the initialized cart data
+      await users.findByIdAndUpdate(
+        req.user.id,
+        { cartData: {} },
+        { new: true, runValidators: true }
+      );
+    }
     if (!userData) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
