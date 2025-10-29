@@ -18,29 +18,46 @@ const PORT = process.env.PORT || 4000;
 // ✅ Middleware
 app.use(express.json());
 
-const allowedOrigins = [
-  'https://ecommerce-frontend-4gjt.onrender.com',
-  'https://ecommerce-admin-hnzh.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000',
-];
-
+// CORS Configuration
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    'https://ecommerce-frontend-4gjt.onrender.com',
+    'https://ecommerce-admin-hnzh.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: '*', // ✅ Allow all custom headers (includes 'token')
+  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-auth-token'],
+  exposedHeaders: ['token'],
+  maxAge: 600 // 10 minutes
 };
 
+// Apply CORS with the above options
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // handle preflights
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Manually set CORS headers for all responses
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (corsOptions.origin.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
+  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'token');
+  res.header('Access-Control-Max-Age', corsOptions.maxAge);
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
 
 
 // ✅ MongoDB Connection
