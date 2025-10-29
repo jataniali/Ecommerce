@@ -19,14 +19,6 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 
 // Handle preflight requests
-app.options('*', cors({
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
-  credentials: true
-}));
-
-// ✅ CORS setup
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
   'https://ecommerce-admin-hnzh.onrender.com',
@@ -37,29 +29,35 @@ const allowedOrigins = [
   'https://ecommerce-backend-7lkk.onrender.com'
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn('Blocked CORS request from:', origin);
-        callback(null, false);
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Origin',
-      'X-Requested-With',
-      'Content-Type',
-      'Accept',
-      'Authorization',
-      'X-Auth-Token',
-      'token'  // Add this line to allow the token header
-    ]
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('❌ Blocked CORS request from:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'X-Auth-Token',
+    'token'
+  ],
+  maxAge: 86400, // cache preflight 24h
+};
+
+// Apply CORS globally (handles both OPTIONS + normal requests)
+app.use(cors(corsOptions));
+
+// Ensure Express can handle preflight requests automatically
+app.options('*', cors(corsOptions));
+
 
 // ✅ MongoDB Connection
 mongoose
