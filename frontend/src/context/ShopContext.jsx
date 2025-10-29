@@ -231,6 +231,16 @@ const addtocart = async (itemId) => {
 
   const { cartTotal, cartItemsCount, hasItems } = getCartTotals();
 
+    // Calculate total cart amount
+    const gettotalcartamount = () => {
+        return cartTotal;
+    };
+
+    // Get total number of items in cart
+    const gettotalcartitems = () => {
+        return cartItemsCount;
+    };
+
     const contextValue = { 
         all_products, 
         cartitems, 
