@@ -277,9 +277,27 @@ app.get('/newcollections', async (req, res) => {
 
 // ✅ Popular Products
 app.get('/popular', async (req, res) => {
-  let products = await Product.find({});
-  let popular = products.slice(1).slice(-8);
-  res.send(popular);
+  try {
+    console.log('📦 Fetching popular products...');
+    let products = await Product.find({ available: true }).sort({ date: -1 }).limit(8).lean();
+    
+    // Format products to ensure consistent ID fields
+    const formattedProducts = products.map(product => ({
+      ...product,
+      id: product._id ? product._id.toString() : null,
+      _id: product._id ? product._id.toString() : null
+    }));
+    
+    console.log(`✅ Fetched ${formattedProducts.length} popular products`);
+    res.json(formattedProducts);
+  } catch (error) {
+    console.error('❌ Error fetching popular products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching popular products',
+      error: error.message
+    });
+  }
 });
 
 // ✅ Upload image to Cloudinary with better error handling
