@@ -85,10 +85,12 @@ fetchProducts();
 const addtocart = async (itemId) => {
     try {
         const token = localStorage.getItem('token');
-        console.log('Token from localStorage:', token);
         
         if (!token) {
-            console.error('No authentication token found. Please log in.');
+            // Show a user-friendly message and redirect to login
+            alert('Please log in to add items to your cart');
+            // Optionally, you can redirect to login page
+            // window.location.href = '/login';
             return;
         }
 
