@@ -1,25 +1,35 @@
-import React from 'react'
-import { Route, Routes } from 'react-router-dom'
-import Navbar from '../../components/Navbar/Navbar'
-import Addproduct from '../../components/Addproduct/Addproduct'
-import Listproduct from '../../components/Listproduct/Listproduct'
+import React, { useEffect } from 'react';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import Navbar from '../../components/Navbar/Navbar';
+import Addproduct from '../../components/Addproduct/Addproduct';
+import Listproduct from '../../components/Listproduct/Listproduct';
 
 const Admin = () => {
-  return (
- <div className="min-h-screen bg-gray-100">
- <Navbar />
-<main className="flex-1">
-<div className="py-6">
-<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<Routes>
-<Route path='/addproduct' element={<Addproduct />} />
-<Route path='/listproduct' element={<Listproduct />} />
-</Routes>
-</div>
- </div>
-</main>
- </div>
-  )
-}
+  const location = useLocation();
 
-export default Admin
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <main className="flex-1">
+        <div className="py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Routes>
+              <Route path="/" element={<Navigate to="/admin/addproduct" replace />} />
+              <Route path="/addproduct" element={<Addproduct />} />
+              <Route path="/listproduct" element={<Listproduct />} />
+              {/* Add a catch-all route that redirects to addproduct */}
+              <Route path="*" element={<Navigate to="/admin/addproduct" replace />} />
+            </Routes>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Admin;

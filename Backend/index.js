@@ -22,6 +22,7 @@ app.use(express.json());
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
   'http://localhost:5173',
+  'http://localhost:5174',
   'http://localhost:3000',
   'http://localhost:4000',
   'https://ecommerce-backend-7lkk.onrender.com'
