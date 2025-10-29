@@ -232,7 +232,14 @@ const fetchuser = async (req, res, next) => {
 // ✅ Add to Cart
 app.post('/addtocart', fetchuser, async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    
     const userData = await users.findById(req.user.id);
+    if (!userData) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
     const itemId = String(req.body.itemId);
     userData.cartData[itemId] = (userData.cartData[itemId] || 0) + 1;
     await users.findByIdAndUpdate(req.user.id, { cartData: userData.cartData });
@@ -259,8 +266,21 @@ app.post('/removefromcart', fetchuser, async (req, res) => {
 
 // ✅ Get Cart Data
 app.post('/getcart', fetchuser, async (req, res) => {
-  let userData = await users.findOne({ _id: req.user.id });
-  res.json(userData.cartData);
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    
+    const userData = await users.findOne({ _id: req.user.id });
+    if (!userData) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    res.json(userData.cartData || {});
+  } catch (error) {
+    console.error('❌ Error in /getcart:', error);
+    res.status(500).json({ success: false, message: 'Error fetching cart' });
+  }
 });
 
 // ✅ New Collections
