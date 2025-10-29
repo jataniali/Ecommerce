@@ -39,27 +39,42 @@ const{all_products}=useContext(ShopContext)
 
   {/* Enhanced Products Grid */}
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-8 lg:px-16 max-w-7xl mx-auto">
-    {all_products.map((item,i)=>{
-      if(props.category===item.category){
-        return (
-          <div
-            key={i}
-            className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
-          >
-            <Items
-              id={item.id}
-              name={item.name}
-              image={item.image}
-              new_price={item.new_price}
-              old_price={item.old_price}
-            />
-          </div>
-        )
-      }
-      else{
-        return null
-      }
-    })}
+    {all_products
+      .filter(item => {
+        if (!item.category) return false;
+        
+        // Normalize category names for comparison
+        const productCategory = item.category.toString().toLowerCase().trim();
+        const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
+        
+        // Special handling for different category name formats
+        if (currentCategory === 'men') {
+          return productCategory === 'men' || productCategory === 'mens';
+        }
+        if (currentCategory === 'women') {
+          return productCategory === 'women' || productCategory === 'womens';
+        }
+        if (currentCategory === 'electronics') {
+          return productCategory === 'electronics' || productCategory === 'electronic';
+        }
+        
+        // Default comparison
+        return productCategory === currentCategory;
+      })
+      .map((item, i) => (
+        <div
+          key={i}
+          className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
+        >
+          <Items
+            id={item.id}
+            name={item.name}
+            image={item.image}
+            new_price={item.new_price}
+            old_price={item.old_price}
+          />
+        </div>
+      ))}
   </div>
 
   {/* Load More Section */}
