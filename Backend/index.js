@@ -19,48 +19,30 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 
 // CORS Configuration
-const corsOptions = {
-  origin: [
-    'https://ecommerce-frontend-4gjt.onrender.com',
-    'https://ecommerce-admin-hnzh.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'token', 'x-auth-token'],
-  exposedHeaders: ['token'],
-  maxAge: 600 // 10 minutes
-};
+const allowedOrigins = [
+  'https://ecommerce-frontend-4gjt.onrender.com',
+  'https://ecommerce-admin-hnzh.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
 
-// Apply CORS with the above options
-app.use(cors(corsOptions));
-
-// Handle preflight requests for all routes
-app.options('/*', (req, res) => {
-  const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
-  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Expose-Headers', 'token');
-  res.header('Access-Control-Max-Age', corsOptions.maxAge);
-  res.sendStatus(204);
-});
-
-// Manually set CORS headers for all responses
+// CORS middleware
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (corsOptions.origin.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, token, x-auth-token');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Expose-Headers', 'token');
+    res.setHeader('Access-Control-Max-Age', '600');
   }
-  res.header('Access-Control-Allow-Methods', corsOptions.methods.join(','));
-  res.header('Access-Control-Allow-Headers', corsOptions.allowedHeaders.join(','));
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Expose-Headers', 'token');
-  res.header('Access-Control-Max-Age', corsOptions.maxAge);
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
   next();
 });
 
