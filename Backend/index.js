@@ -18,6 +18,14 @@ const PORT = process.env.PORT || 4000;
 // ✅ Middleware
 app.use(express.json());
 
+// Handle preflight requests
+app.options('*', cors({
+  origin: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'token'],
+  credentials: true
+}));
+
 // ✅ CORS setup
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
@@ -47,7 +55,8 @@ app.use(
       'Content-Type',
       'Accept',
       'Authorization',
-      'X-Auth-Token'
+      'X-Auth-Token',
+      'token'  // Add this line to allow the token header
     ]
   })
 );
