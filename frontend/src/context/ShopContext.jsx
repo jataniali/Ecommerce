@@ -9,6 +9,13 @@ const getdefaultcart = () => {
 const ShopcontextProvider = (props) => {
     const [all_products, setAllProduct] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        // Initialize from localStorage if available
+        if (typeof window !== 'undefined') {
+            return !!localStorage.getItem('token');
+        }
+        return false;
+    });
 
  useEffect(() => {
  const fetchProducts = async () => {
@@ -115,16 +122,20 @@ const addtocart = async (itemId) => {
         }
 
         // Check authentication
-        if (!checkAuth()) {
+        if (!isAuthenticated) {
             if (window.confirm('You need to log in to add items to your cart. Go to login page?')) {
-                // Clear any invalid tokens
-                localStorage.removeItem('token');
+                // Clear any invalid tokens and update state
+                handleLogout();
                 window.location.href = '/login';
             }
             return;
         }
 
         const token = localStorage.getItem('token');
+        if (!token) {
+            handleLogout();
+            return;
+        }
         
         // Make the API call with error handling for network issues
         let response;
@@ -283,15 +294,36 @@ const addtocart = async (itemId) => {
         return cartItemsCount;
     };
 
+    // Handle login
+    const handleLogin = (token) => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('token', token);
+            setIsAuthenticated(true);
+        }
+    };
+
+    // Handle logout
+    const handleLogout = () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            setCartitems({});
+            setIsAuthenticated(false);
+        }
+    };
+
     const contextValue = { 
         all_products, 
         cartitems, 
         addtocart, 
-        removefromcart, 
-        gettotalcartamount, 
+        removefromcart,
+        gettotalcartamount,
         gettotalcartitems,
-        findProductById,
-        isLoading
+        getCartTotals,
+        isLoading,
+        isAuthenticated,
+        handleLogin,
+        handleLogout,
+        findProductById
     };
 
     return (

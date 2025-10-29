@@ -1,22 +1,33 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import logo from '../assets/logo.jpg';
 import { FaShoppingCart, FaBars, FaTimes } from 'react-icons/fa';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeNav, setActiveNav] = useState('Shop');
-
-  const {gettotalcartitems}=useContext(ShopContext)
-  // Change navbar style on scroll
-  if (typeof window !== 'undefined') {
-    window.addEventListener('scroll', () => {
-      window.scrollY > 10 ? setIsScrolled(true) : setIsScrolled(false);
-    });
-  }
+  const navigate = useNavigate();
+  
+  const { gettotalcartitems, isAuthenticated, handleLogout } = useContext(ShopContext);
+  
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
+  // Handle logout
+  const handleLogoutClick = () => {
+    handleLogout();
+    navigate('/');
+  };
+  // Scroll handler is now in useEffect
 
   return (
 <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'} ${isMenuOpen ? 'bg-white shadow-md' : ''}`}>
@@ -75,23 +86,20 @@ className="h-10 w-10 rounded-full object-cover"
 
   {/* Auth and Cart */}
 <div className="hidden md:flex items-center space-x-6">
-{localStorage.getItem("token") ? (
-  <button
-    onClick={() => {
-      localStorage.removeItem("token");
-      window.location.replace("/");
-    }}
-    className="px-4 py-2 text-gray-700 hover:text-red-600 font-medium transition-colors duration-200"
-  >
-    Logout
-  </button>
-) : (
-  <Link to="/login">
-    <button className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
-      Login
+  {isAuthenticated ? (
+    <button
+      onClick={handleLogoutClick}
+      className="px-4 py-2 text-gray-700 hover:text-red-600 font-medium transition-colors duration-200"
+    >
+      Logout
     </button>
-  </Link>
-)}
+  ) : (
+    <Link to="/login">
+      <button className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+        Login
+      </button>
+    </Link>
+  )}
 
 <button className="relative p-2 text-gray-700 hover:text-blue-600 transition-colors duration-200">
 <Link to='/cart'>
@@ -112,16 +120,37 @@ className="h-10 w-10 rounded-full object-cover"
                 { name: 'Men', path: '/mens' },
                 { name: 'Women', path: '/womens' },
                 { name: 'Electronics', path: '/electronics' },
-                { name: 'Login', path: '/login' },
-                { name: 'Cart', path: '/cart' }
+                ...(isAuthenticated 
+                  ? [
+                      { 
+                        name: 'Logout', 
+                        path: '#',
+                        onClick: handleLogoutClick
+                      }
+                    ] 
+                  : [
+                      { 
+                        name: 'Login', 
+                        path: '/login',
+                        onClick: () => setIsMenuOpen(false)
+                      }
+                    ]
+                ),
+                { 
+                  name: `Cart (${gettotalcartitems()})`, 
+                  path: '/cart',
+                  onClick: () => setIsMenuOpen(false)
+                }
               ].map(({ name, path }) => (
                 <li key={name}>
                   <Link 
                     to={path}
                     className={`block py-2 px-3 rounded-md text-gray-700 hover:bg-gray-100 ${activeNav === name ? 'text-blue-600 font-medium' : ''}`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      if (path === '#') e.preventDefault();
                       setActiveNav(name);
                       setIsMenuOpen(false);
+                      if (onClick) onClick(e);
                     }}
                   >
                     {name}
