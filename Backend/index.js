@@ -11,13 +11,10 @@ import cors from 'cors';
 import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
-
 const app = express();
 const PORT = process.env.PORT || 4000;
-
 // ✅ Middleware
 app.use(express.json());
-
 // CORS Configuration
 const allowedOrigins = [
   'https://ecommerce-frontend-4gjt.onrender.com',
@@ -37,16 +34,12 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Expose-Headers', 'token');
     res.setHeader('Access-Control-Max-Age', '600');
   }
-  
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
-  
   next();
 });
-
-
 // ✅ MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -57,21 +50,17 @@ mongoose
 app.get('/', (req, res) => {
   res.send('Hello from Backend');
 });
-
 // ✅ Configure Cloudinary
 console.log('Initializing Cloudinary...');
 console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
 console.log('API Key:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
   secure: true
 });
-
 console.log('Cloudinary configured successfully');
-
 // ✅ Cloudinary Storage setup with better configuration
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -87,7 +76,6 @@ const storage = new CloudinaryStorage({
     cb(null, `product-${Date.now()}-${file.originalname}`);
   }
 });
-
 // Configure multer with file size limit and file filter
 const upload = multer({
   storage: storage,
@@ -100,7 +88,6 @@ const upload = multer({
     }
   }
 }).single('product');
-
 // ✅ Product Schema
 const Product = mongoose.model('Product', {
   name: { type: String, required: true },
@@ -112,6 +99,10 @@ const Product = mongoose.model('Product', {
   category: { type: String, required: true }
 });
 
+// Add database indexes for performance
+Product.collection.createIndex({ category: 1 });
+Product.collection.createIndex({ date: -1 });
+Product.collection.createIndex({ available: 1 });
 // ✅ Add Product
 app.post('/addproduct', async (req, res) => {
   try {
@@ -123,7 +114,6 @@ app.post('/addproduct', async (req, res) => {
       category: req.body.category,
       old_price: req.body.old_price
     });
-
     await product.save();
     console.log('✅ Product Added Successfully');
     res.json({ success: true, name: req.body.name });
@@ -132,7 +122,6 @@ app.post('/addproduct', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error adding product' });
   }
 });
-
 // ✅ Delete Product
 app.post('/removeproduct', async (req, res) => {
   try {
@@ -144,22 +133,47 @@ app.post('/removeproduct', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error deleting product' });
   }
 });
-
 // ✅ Get All Products
 app.get('/allproducts', async (req, res) => {
   try {
-    console.log('📦 Fetching all products...');
-    let products = await Product.find({}).lean();
+    console.log('📦 Fetching products...');
+    
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+    
+    // Optimized query with pagination and field selection
+    let products = await Product.find({})
+      .select('name image new_price old_price category available _id')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+    
+    // Get total count for pagination info
+    const total = await Product.countDocuments();
     
     // Ensure all products have both _id and id fields for compatibility
     const formattedProducts = products.map(product => ({
       ...product,
-      id: product._id.toString(), // Ensure id is a string
-      _id: product._id.toString() // Ensure _id is a string
+      id: product._id.toString(),
+      _id: product._id.toString()
     }));
     
-    console.log(`✅ Fetched ${formattedProducts.length} products successfully`);
-    res.json(formattedProducts);
+    console.log(`✅ Fetched ${formattedProducts.length} products (page ${page})`);
+    
+    // Add caching headers
+    res.set('Cache-Control', 'public, max-age=600'); // 10 minutes cache
+    res.json({
+      products: formattedProducts,
+      pagination: {
+        current: page,
+        limit: limit,
+        total: total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('❌ Error fetching products:', error);
     res.status(500).json({ 
@@ -169,7 +183,6 @@ app.get('/allproducts', async (req, res) => {
     });
   }
 });
-
 // ✅ User Schema
 const users = mongoose.model('users', {
   name: { type: String, required: true },
@@ -178,17 +191,14 @@ const users = mongoose.model('users', {
   cartData: { type: Object },
   date: { type: Date, default: Date.now }
 });
-
 // ✅ Signup
 app.post('/signup', async (req, res) => {
   let check = await users.findOne({ email: req.body.email });
   if (check) {
     return res.status(400).json({ success: false, message: 'User already exists' });
   }
-
   let cart = {};
   for (let i = 0; i < 300; i++) cart[i] = 0;
-
   const user = new users({
     name: req.body.username,
     email: req.body.email,
@@ -196,31 +206,25 @@ app.post('/signup', async (req, res) => {
     cartData: cart
   });
   await user.save();
-
   const data = { user: { id: user.id } };
   const authtoken = jwt.sign(data, process.env.JWT_SECRET || 'fallback_secret');
   res.json({ success: true, token: authtoken });
 });
-
 // ✅ Login
 app.post('/login', async (req, res) => {
   let user = await users.findOne({ email: req.body.email });
   if (!user) return res.json({ success: false, message: 'Wrong Email' });
-
   const passwordMatch = req.body.password === user.password;
   if (!passwordMatch) return res.json({ success: false, message: 'Wrong Password' });
-
   const data = { user: { id: user.id } };
   const token = jwt.sign(data, process.env.JWT_SECRET || 'fallback_secret');
   res.json({ success: true, token });
 });
-
 // ✅ Enhanced fetch user middleware with additional checks
 const fetchuser = async (req, res, next) => {
   try {
     // Check for token in both header, query, and body (for maximum compatibility)
     const token = req.header('token') || req.query.token || (req.body && req.body.token);
-    
     if (!token) {
       return res.status(401).json({ 
         success: false,
@@ -228,10 +232,8 @@ const fetchuser = async (req, res, next) => {
         code: 'AUTH_REQUIRED'
       });
     }
-
     // Verify token
     const data = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
-    
     // Additional check for required user data
     if (!data || !data.user || !data.user.id) {
       return res.status(401).json({
@@ -240,7 +242,6 @@ const fetchuser = async (req, res, next) => {
         code: 'INVALID_TOKEN'
       });
     }
-    
     // Verify user exists in database
     const userExists = await users.findById(data.user.id);
     if (!userExists) {
@@ -250,7 +251,6 @@ const fetchuser = async (req, res, next) => {
         code: 'USER_NOT_FOUND'
       });
     }
-    
     // Attach user to request
     req.user = data.user;
     next();
@@ -283,7 +283,6 @@ const fetchuser = async (req, res, next) => {
     });
   }
 };
-
 // ✅ Add to Cart
 app.post('/addtocart', fetchuser, async (req, res) => {
   try {
@@ -319,7 +318,6 @@ app.post('/addtocart', fetchuser, async (req, res) => {
     res.status(500).json({ success: false, message: 'Error adding to cart' });
   }
 });
-
 // ✅ Remove from Cart
 app.post('/removefromcart', fetchuser, async (req, res) => {
   try {
@@ -380,7 +378,6 @@ app.post('/removefromcart', fetchuser, async (req, res) => {
     });
   }
 });
-
 // ✅ Get Cart Data
 app.post('/getcart', fetchuser, async (req, res) => {
   try {
@@ -415,19 +412,23 @@ app.post('/getcart', fetchuser, async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching cart' });
   }
 });
-
 // ✅ New Collections
 app.get('/newcollections', async (req, res) => {
   let products = await Product.find({});
   let newcollections = products.slice(1).slice(-8);
   res.send(newcollections);
 });
-
 // ✅ Popular Products
 app.get('/popular', async (req, res) => {
   try {
     console.log('📦 Fetching popular products...');
-    let products = await Product.find({ available: true }).sort({ date: -1 }).limit(8).lean();
+    
+    // Optimized query with only needed fields and caching headers
+    let products = await Product.find({ available: true })
+      .select('name image new_price old_price _id')
+      .sort({ date: -1 })
+      .limit(8)
+      .lean();
     
     // Format products to ensure consistent ID fields
     const formattedProducts = products.map(product => ({
@@ -437,6 +438,9 @@ app.get('/popular', async (req, res) => {
     }));
     
     console.log(`✅ Fetched ${formattedProducts.length} popular products`);
+    
+    // Add caching headers
+    res.set('Cache-Control', 'public, max-age=300'); // 5 minutes cache
     res.json(formattedProducts);
   } catch (error) {
     console.error('❌ Error fetching popular products:', error);
@@ -447,7 +451,6 @@ app.get('/popular', async (req, res) => {
     });
   }
 });
-
 // ✅ Upload image to Cloudinary with better error handling
 app.post('/upload', (req, res) => {
   upload(req, res, async (err) => {
@@ -505,13 +508,11 @@ app.post('/upload', (req, res) => {
     }
   });
 });
-
 // ✅ Serve frontend build
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 const indexPath = path.join(frontendPath, 'index.html');
-
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
   app.get('*', (req, res) => {
@@ -523,7 +524,6 @@ if (fs.existsSync(frontendPath)) {
 } else {
   console.warn('⚠️ Frontend build not found at:', frontendPath);
 }
-
 // ✅ Start Server
 app.listen(PORT, (error) => {
   if (!error) {
