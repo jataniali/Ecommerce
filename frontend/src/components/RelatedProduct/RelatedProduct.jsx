@@ -12,11 +12,19 @@ const RelatedProduct = () => {
       try {
         // Fetch all products
         const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
-        const allProducts = await response.json();
+        const data = await response.json();
+        
+        // Handle paginated response structure
+        let allProducts = [];
+        if (data.products && Array.isArray(data.products)) {
+          allProducts = data.products;
+        } else if (Array.isArray(data)) {
+          allProducts = data;
+        }
         
         // Filter out the current product and get a random sample
         const filteredProducts = allProducts.filter(
-          (product) => String(product._id) !== String(productId)
+          (product) => String(product._id || product.id) !== String(productId)
         );
         
         // Get up to 4 random related products
@@ -25,8 +33,10 @@ const RelatedProduct = () => {
           .slice(0, 4);
         
         setRelatedProducts(randomProducts);
+        console.log('Related products loaded:', randomProducts.length);
       } catch (error) {
         console.error('Error fetching related products:', error);
+        setRelatedProducts([]);
       } finally {
         setIsLoading(false);
       }
