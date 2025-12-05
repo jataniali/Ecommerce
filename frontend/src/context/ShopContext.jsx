@@ -23,11 +23,19 @@ try {
 const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
 const data = await response.json();
                 
+                // Handle paginated response structure
+                let products = [];
+                if (data.products && Array.isArray(data.products)) {
+                    products = data.products;
+                } else if (Array.isArray(data)) {
+                    products = data;
+                }
+                
                 // Log the first few products for debugging
-console.log('Fetched products in ShopContext:', data && data.length > 0 ? data.slice(0, 3) : 'No products');
+console.log('Fetched products in ShopContext:', products && products.length > 0 ? products.slice(0, 3) : 'No products');
                 
                 // Ensure all products have consistent ID fields
- const processedProducts = data.map(product => ({
+ const processedProducts = products.map(product => ({
 ...product,
   // Ensure both id and _id are available and consistent
 id: product.id || product._id,
@@ -36,6 +44,7 @@ _id: product._id || product.id
  setAllProduct(processedProducts);
  } catch (error) {
                 console.error("Error fetching products:", error);
+                setAllProduct([]);
 } finally {
 setIsLoading(false);
 }

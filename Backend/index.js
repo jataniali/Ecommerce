@@ -133,6 +133,47 @@ app.post('/removeproduct', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error deleting product' });
   }
 });
+// ✅ Get Single Product by ID
+app.get('/product/:id', async (req, res) => {
+  try {
+    const productId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid product ID format' 
+      });
+    }
+
+    const product = await Product.findById(productId).lean();
+    
+    if (!product) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Product not found' 
+      });
+    }
+
+    // Ensure consistent ID format
+    const formattedProduct = {
+      ...product,
+      id: product._id.toString(),
+      _id: product._id.toString()
+    };
+
+    res.json({
+      success: true,
+      product: formattedProduct
+    });
+  } catch (error) {
+    console.error('❌ Error fetching product:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching product',
+      error: error.message 
+    });
+  }
+});
+
 // ✅ Get All Products
 app.get('/allproducts', async (req, res) => {
   try {

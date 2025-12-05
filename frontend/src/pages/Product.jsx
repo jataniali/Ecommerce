@@ -1,5 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { ShopContext } from '../context/ShopContext';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Breadcrumbs from '../components/Breadcrumbs/Breadcrumbs';
 import Productdisplay from '../components/Productdisplay/Productdisplay';
@@ -7,7 +6,6 @@ import Description from '../components/Descriptionbox/Description';
 import RelatedProduct from '../components/RelatedProduct/RelatedProduct';
 
 const Product = () => {
-  const { all_products, findProductById, isLoading: contextLoading } = useContext(ShopContext);
   const { productId } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
@@ -15,57 +13,44 @@ const Product = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('Product component mounted with ID:', productId);
-    
-    if (!productId) {
-      const errorMsg = 'No product ID found in URL';
-      console.error(errorMsg);
-      setError(errorMsg);
-      setIsLoading(false);
-      return;
-    }
-
-    // If context is still loading products, wait for it
-    if (contextLoading) {
-      console.log('Waiting for products to load...');
-      return;
-    }
-
-    console.log('Searching for product with ID:', productId, 'Type:', typeof productId);
-    
-    // Debug: Log first few products' IDs for comparison
-    if (all_products && all_products.length > 0) {
-      console.log('Sample product IDs:', all_products.slice(0, 3).map(p => ({
-        id: p.id,
-        _id: p._id,
-        idType: p.id ? typeof p.id : 'undefined',
-        _idType: p._id ? typeof p._id : 'undefined',
-        name: p.name
-      })));
-      
-      // Use the context's findProductById function
-      const foundProduct = findProductById(productId);
-      
-      if (foundProduct) {
-        console.log('Found product:', foundProduct);
-        setProduct(foundProduct);
-        setError(null);
-      } else {
-        const errorMsg = `Product not found. ID: ${productId}`;
-        console.error(errorMsg);
-        console.error('Available product IDs:', all_products.map(p => p.id || p._id));
-        setError(errorMsg);
+    const fetchProduct = async () => {
+      if (!productId) {
+        setError('No product ID provided');
+        setIsLoading(false);
+        return;
       }
-    } else {
-      const errorMsg = 'No products available';
-      console.error(errorMsg);
-      setError(errorMsg);
-    }
-    
-    setIsLoading(false);
-  }, [all_products, productId, navigate, findProductById, contextLoading]);
 
-  if (isLoading || contextLoading) {
+      setIsLoading(true);
+      try {
+        console.log(`Fetching product with ID: ${productId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/product/${productId}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to fetch product');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.product) {
+          console.log('Product found:', data.product);
+          setProduct(data.product);
+          setError(null);
+        } else {
+          throw new Error(data.message || 'Product not found');
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err);
+        setError(err.message || 'Failed to load product. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId, navigate]);
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
