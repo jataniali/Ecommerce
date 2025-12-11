@@ -55,42 +55,52 @@ const{all_products}=useContext(ShopContext)
         const productCategory = item.category.toString().toLowerCase().trim();
         const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
         
+        // Direct match for exact category values
+        if (productCategory === currentCategory) {
+          console.log(`Direct match: ${item.name} in category ${item.category}`);
+          return true;
+        }
+        
         // Handle men's category variations
         if (currentCategory === 'men' || currentCategory === "men's" || currentCategory === 'mens') {
-          // First try direct match with 'men' (as seen in the database)
-          if (productCategory === 'men') {
-            console.log(`Men's product matched:`, item.name);
-            return true;
-          }
-          
-          // Fallback to other variations
-          const menCategories = [
-            'mens', "men's", "men's clothing", 
-            'man', "man's", 'menswear', "men's wear",
-            'male', 'mens fashion', "men's fashion"
-          ];
-          
+          const menCategories = ['men', 'mens', "men's"];
           const isMatch = menCategories.includes(productCategory);
-          
           if (isMatch) {
-            console.log(`Men's product matched (variation):`, { 
-              name: item.name,
-              productCategory 
-            });
+            console.log(`Men's category match: ${item.name} in ${productCategory}`);
           }
-          
           return isMatch;
         }
         
+        // Handle women's category variations
         if (currentCategory === 'women' || currentCategory === "women's") {
-          return ['women', 'womens', "women's", "women's clothing"].includes(productCategory);
+          const womenCategories = ['women', 'womens', "women's"];
+          const isMatch = womenCategories.includes(productCategory);
+          if (isMatch) {
+            console.log(`Women's category match: ${item.name} in ${productCategory}`);
+          }
+          return isMatch;
         }
         
+        // Handle electronics category
         if (currentCategory === 'electronics') {
-          return ['electronics', 'electronic'].includes(productCategory);
+          const electronicsCategories = ['electronics', 'electronic'];
+          const isMatch = electronicsCategories.includes(productCategory);
+          if (isMatch) {
+            console.log(`Electronics category match: ${item.name} in ${productCategory}`);
+          }
+          return isMatch;
         }
         
-        return productCategory === currentCategory;
+        // Handle kids category
+        if (currentCategory === 'kids') {
+          const isMatch = productCategory === 'kids';
+          if (isMatch) {
+            console.log(`Kids category match: ${item.name} in ${productCategory}`);
+          }
+          return isMatch;
+        }
+        
+        return false;
       })
       .map((item, i) => (
         <div

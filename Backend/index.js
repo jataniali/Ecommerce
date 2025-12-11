@@ -114,6 +114,7 @@ app.post('/addproduct', async (req, res) => {
       category: req.body.category,
       old_price: req.body.old_price
     });
+    product.id = product._id.toString();
     await product.save();
     console.log('✅ Product Added Successfully');
     res.json({ success: true, name: req.body.name });
