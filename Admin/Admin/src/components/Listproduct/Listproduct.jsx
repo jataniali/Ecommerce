@@ -103,9 +103,9 @@ const Listproduct = () => {
         
         toast.success('Product deleted successfully');
         
-        // Immediately remove from state
-        setProducts(prev => prev.filter(product => product._id !== id));
-        setFilteredProducts(prev => prev.filter(product => product._id !== id));
+        // Immediately remove from state (check both id and _id for compatibility)
+        setProducts(prev => prev.filter(product => (product._id !== id && product.id !== id)));
+        setFilteredProducts(prev => prev.filter(product => (product._id !== id && product.id !== id)));
         
         // Also refresh from server to ensure consistency
         fetchProducts();
@@ -318,8 +318,9 @@ const Listproduct = () => {
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              console.log('Edit button clicked for product:', product._id);
-                              navigate(`/edit-product/${product._id}`);
+                              const productId = product.id || product._id;
+                              console.log('Edit button clicked for product:', productId);
+                              navigate(`/edit-product/${productId}`);
                             }}
                             className="text-blue-600 hover:text-blue-900 mr-4"
                             title="Edit"
@@ -327,7 +328,7 @@ const Listproduct = () => {
                             <FiEdit2 className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => deleteProduct(product._id, product.name)}
+                            onClick={() => deleteProduct(product.id || product._id, product.name)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
