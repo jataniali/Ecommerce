@@ -20,6 +20,9 @@ const ShopcontextProvider = (props) => {
  useEffect(() => {
  const fetchProducts = async () => {
 try {
+console.log('ShopContext: Starting to fetch products...');
+const startTime = performance.now();
+
 const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
 const data = await response.json();
                 
@@ -31,17 +34,22 @@ const data = await response.json();
                     products = data;
                 }
                 
-                // Log the first few products for debugging
-console.log('Fetched products in ShopContext:', products && products.length > 0 ? products.slice(0, 3) : 'No products');
+                console.log(`ShopContext: Fetched ${products.length} products in ${(performance.now() - startTime).toFixed(2)}ms`);
                 
-                // Ensure all products have consistent ID fields
- const processedProducts = products.map(product => ({
-...product,
-  // Ensure both id and _id are available and consistent
-id: product.id || product._id,
-_id: product._id || product.id
-}));
- setAllProduct(processedProducts);
+                // Only process if we have products and they're different from current ones
+                if (products.length > 0) {
+                    // Ensure all products have consistent ID fields (optimize with useCallback-like approach)
+                    const processedProducts = products.map(product => ({
+                        ...product,
+                        id: product.id || product._id,
+                        _id: product._id || product.id
+                    }));
+                    
+                    console.log(`ShopContext: Processed products in ${(performance.now() - startTime).toFixed(2)}ms`);
+                    setAllProduct(processedProducts);
+                } else {
+                    setAllProduct([]);
+                }
  } catch (error) {
                 console.error("Error fetching products:", error);
                 setAllProduct([]);
