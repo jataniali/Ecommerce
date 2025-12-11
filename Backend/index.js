@@ -126,12 +126,42 @@ app.post('/addproduct', async (req, res) => {
 // ✅ Delete Product
 app.post('/removeproduct', async (req, res) => {
   try {
-    await Product.findOneAndDelete({ _id: req.body.id });
-    console.log('🗑️ Product Deleted Successfully');
-    res.json({ success: true });
+    const { id } = req.body;
+    
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid product ID format' 
+      });
+    }
+    
+    // Find and delete the product
+    const deletedProduct = await Product.findByIdAndDelete(id);
+    
+    if (!deletedProduct) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Product not found' 
+      });
+    }
+    
+    console.log('🗑️ Product Deleted Successfully:', deletedProduct.name);
+    res.json({ 
+      success: true, 
+      message: 'Product deleted successfully',
+      deletedProduct: {
+        id: deletedProduct._id.toString(),
+        name: deletedProduct.name
+      }
+    });
   } catch (error) {
     console.error('❌ Error deleting product:', error);
-    res.status(500).json({ success: false, message: 'Error deleting product' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error deleting product',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 // ✅ Get Single Product by ID

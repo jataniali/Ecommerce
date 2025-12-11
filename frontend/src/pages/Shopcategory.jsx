@@ -81,21 +81,21 @@ const{all_products}=useContext(ShopContext)
           return isMatch;
         }
         
+        // Handle kids category
+        if (currentCategory === 'kids') {
+          const isMatch = productCategory === 'kids';
+          if (isMatch) {
+            console.log(`Kids category match: ${item.name} in ${productCategory}`);
+          }
+          return isMatch;
+        }
+        
         // Handle electronics category
         if (currentCategory === 'electronics') {
           const electronicsCategories = ['electronics', 'electronic'];
           const isMatch = electronicsCategories.includes(productCategory);
           if (isMatch) {
             console.log(`Electronics category match: ${item.name} in ${productCategory}`);
-          }
-          return isMatch;
-        }
-        
-        // Handle kids category
-        if (currentCategory === 'kids') {
-          const isMatch = productCategory === 'kids';
-          if (isMatch) {
-            console.log(`Kids category match: ${item.name} in ${productCategory}`);
           }
           return isMatch;
         }

@@ -24,7 +24,6 @@ const Listproduct = () => {
     const categoryMap = {
       'men': 'Men',
       'women': 'Women',
-      'kids': 'Kids',
       'electronics': 'Electronics'
     };
     return categoryMap[category] || category;
