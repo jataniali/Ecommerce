@@ -22,7 +22,7 @@ const App = () => {
       <Routes>
         <Route path='/' element={<Shop />} />
         <Route path='/products' element={<Shopcategory category="all" />} />
-        <Route path='/mens' element={<Shopcategory bunner={men_bunner} category="mens" />} />
+        <Route path='/mens' element={<Shopcategory bunner={men_bunner} category="men" />} />
         <Route path='/womens' element={<Shopcategory bunner={women_bunner} category="women" />} />
         <Route path='/electronics' element={<Shopcategory bunner={electronic_bunner} category="electronics" />} />
         <Route path='/product/:productId' element={<Product />} />
