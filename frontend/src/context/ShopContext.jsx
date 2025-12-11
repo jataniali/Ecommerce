@@ -23,7 +23,13 @@ try {
 console.log('ShopContext: Starting to fetch products...');
 const startTime = performance.now();
 
-const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts`);
+const response = await fetch(`${import.meta.env.VITE_API_URL}/allproducts?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
 const data = await response.json();
                 
                 // Handle paginated response structure

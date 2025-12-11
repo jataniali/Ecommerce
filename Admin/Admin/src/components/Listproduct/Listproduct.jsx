@@ -58,7 +58,13 @@ const Listproduct = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/allproducts`);
+      const response = await fetch(`${API_URL}/allproducts?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }

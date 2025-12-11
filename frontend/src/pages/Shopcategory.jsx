@@ -11,6 +11,9 @@ const{all_products}=useContext(ShopContext)
   // Optimize filtering with useMemo to prevent re-calculating on every render
   const filteredProducts = useMemo(() => {
     console.log(`Shopcategory: Filtering ${all_products.length} products for category "${props.category}"`);
+    const all_categories = [...new Set(all_products.map(p => p.category))];
+    console.log('All available categories:', all_categories);
+    console.log('Products with their categories:', all_products.map(p => ({ name: p.name, category: p.category })));
     const startTime = performance.now();
     
     const filtered = all_products
