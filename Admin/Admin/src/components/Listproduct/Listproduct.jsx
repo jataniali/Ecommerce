@@ -270,7 +270,7 @@ const Listproduct = () => {
                       <tr key={product._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
+                            <div className="shrink-0 h-10 w-10">
                               <img 
                                 className="h-10 w-10 rounded-full object-cover" 
                                 src={getImageUrl(product.image)} 
@@ -295,12 +295,11 @@ const Listproduct = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => navigate(`/edit-product/${product._id}`)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="h-5 w-5" />
-                          </button>
+  onClick={() => navigate(`/admin/edit-product/${product._id}`)}
+  className="text-blue-600 hover:text-blue-900 mr-4"
+>
+  <FiEdit2 className="h-5 w-5" />
+</button>
                           <button
                             onClick={() => deleteProduct(product._id, product.name)}
                             className="text-red-600 hover:text-red-900"

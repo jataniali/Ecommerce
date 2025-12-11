@@ -3,6 +3,7 @@ import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import Addproduct from '../../components/Addproduct/Addproduct';
 import Listproduct from '../../components/Listproduct/Listproduct';
+import Editproduct from '../../components/Editproduct/Editproduct';
 
 const Admin = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const Admin = () => {
               <Route path="/" element={<Navigate to="/admin/addproduct" replace />} />
               <Route path="/addproduct" element={<Addproduct />} />
               <Route path="/listproduct" element={<Listproduct />} />
+              <Route path="/edit-product/:id" element={<Editproduct />} />
               {/* Add a catch-all route that redirects to addproduct */}
               <Route path="*" element={<Navigate to="/admin/addproduct" replace />} />
             </Routes>

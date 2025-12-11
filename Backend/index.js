@@ -492,6 +492,49 @@ app.get('/popular', async (req, res) => {
     });
   }
 });
+// ✅ Update Product
+app.put('/updateproduct/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, category, new_price, old_price, image } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid product ID format' 
+      });
+    }
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { 
+        name, 
+        category, 
+        new_price, 
+        old_price, 
+        image,
+        date: Date.now() // Update the last modified date
+      },
+      { new: true, runValidators: true }
+    );
+    if (!updatedProduct) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Product not found' 
+      });
+    }
+    console.log('✅ Product updated successfully');
+    res.json({ 
+      success: true, 
+      product: updatedProduct 
+    });
+  } catch (error) {
+    console.error('❌ Error updating product:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error updating product',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 // ✅ Upload image to Cloudinary with better error handling
 app.post('/upload', (req, res) => {
   upload(req, res, async (err) => {
