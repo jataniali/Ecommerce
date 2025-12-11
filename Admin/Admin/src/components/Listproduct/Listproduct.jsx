@@ -103,7 +103,13 @@ const Listproduct = () => {
         }
         
         toast.success('Product deleted successfully');
-        fetchProducts(); // Refresh the list
+        
+        // Immediately remove from state
+        setProducts(prev => prev.filter(product => product._id !== id));
+        setFilteredProducts(prev => prev.filter(product => product._id !== id));
+        
+        // Also refresh from server to ensure consistency
+        fetchProducts();
       } catch (error) {
         console.error('Error deleting product:', error);
         toast.error(error.message || 'Failed to delete product');
@@ -310,7 +316,12 @@ const Listproduct = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => navigate(`/edit-product/${product._id}`)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Edit button clicked for product:', product._id);
+                              navigate(`/edit-product/${product._id}`);
+                            }}
                             className="text-blue-600 hover:text-blue-900 mr-4"
                             title="Edit"
                           >
