@@ -19,6 +19,17 @@ const Listproduct = () => {
   const [itemsPerPage] = useState(8);
   const navigate = useNavigate();
 
+  // Function to get display name for category
+  const getCategoryDisplayName = (category) => {
+    const categoryMap = {
+      'men': 'Men',
+      'women': 'Women',
+      'kids': 'Kids',
+      'electronics': 'Electronics'
+    };
+    return categoryMap[category] || category;
+  };
+
   // Handle image loading errors
   const handleImageError = (e) => {
     e.target.onerror = null; // Prevent infinite loop if the fallback also fails
@@ -85,13 +96,17 @@ const Listproduct = () => {
           body: JSON.stringify({ id })
         });
 
-        if (!response.ok) throw new Error('Failed to delete product');
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || 'Failed to delete product');
+        }
         
         toast.success('Product deleted successfully');
         fetchProducts(); // Refresh the list
       } catch (error) {
         console.error('Error deleting product:', error);
-        toast.error('Failed to delete product');
+        toast.error(error.message || 'Failed to delete product');
       }
     }
   };
@@ -228,7 +243,7 @@ const Listproduct = () => {
                 <option value="all">All Categories</option>
                 {categories.filter(cat => cat !== 'all').map((category, index) => (
                   <option key={index} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                    {getCategoryDisplayName(category)}
                   </option>
                 ))}
               </select>
@@ -285,7 +300,7 @@ const Listproduct = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 capitalize">{product.category}</div>
+                          <div className="text-sm text-gray-900">{getCategoryDisplayName(product.category)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">${product.new_price?.toFixed(2)}</div>
@@ -295,11 +310,12 @@ const Listproduct = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-  onClick={() => navigate(`/admin/edit-product/${product._id}`)}
-  className="text-blue-600 hover:text-blue-900 mr-4"
->
-  <FiEdit2 className="h-5 w-5" />
-</button>
+                            onClick={() => navigate(`/edit-product/${product._id}`)}
+                            className="text-blue-600 hover:text-blue-900 mr-4"
+                            title="Edit"
+                          >
+                            <FiEdit2 className="h-5 w-5" />
+                          </button>
                           <button
                             onClick={() => deleteProduct(product._id, product.name)}
                             className="text-red-600 hover:text-red-900"
