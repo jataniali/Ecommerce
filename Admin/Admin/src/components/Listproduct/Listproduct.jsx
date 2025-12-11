@@ -67,12 +67,20 @@ const Listproduct = () => {
       // Handle the API response structure
       const productsData = data.products || data;
       
+      console.log('Admin panel - Raw API response:', data);
+      console.log('Admin panel - Products data:', productsData);
+      console.log('Admin panel - Products data type:', typeof productsData);
+      console.log('Admin panel - Is array?:', Array.isArray(productsData));
+      
       // Process the products to ensure image URLs are correct
       const processedProducts = Array.isArray(productsData) ? productsData.map(product => ({
         ...product,
         // Ensure image URL is properly formatted
         image: getImageUrl(product.image)
       })) : [];
+      
+      console.log('Admin panel - Processed products:', processedProducts);
+      console.log('Admin panel - Processed products count:', processedProducts.length);
       
       setProducts(processedProducts);
       setFilteredProducts(processedProducts);
@@ -151,6 +159,17 @@ const Listproduct = () => {
 
   useEffect(() => {
     fetchProducts();
+  }, []);
+
+  // Refresh data when window gains focus (when user navigates back to this page)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Admin panel - Window focused, refreshing products');
+      fetchProducts();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   // Loading state

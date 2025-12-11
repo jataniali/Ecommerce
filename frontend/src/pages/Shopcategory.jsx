@@ -108,7 +108,10 @@ const{all_products}=useContext(ShopContext)
 
   {/* Enhanced Products Grid */}
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-8 lg:px-16 max-w-7xl mx-auto">
-    {filteredProducts.map((item, i) => (
+    {filteredProducts.length > 0 ? (
+      filteredProducts.map((item, i) => {
+        console.log(`Rendering item ${i}:`, item);
+        return (
         <div
           key={i}
           className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
@@ -121,7 +124,19 @@ const{all_products}=useContext(ShopContext)
             old_price={item.old_price}
           />
         </div>
-      ))}
+      );
+    })
+    ) : (
+      <div className="col-span-full text-center py-12">
+        <div className="text-gray-500">
+          <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No products found in this category</h3>
+          <p className="text-gray-500">Try checking other categories or add some products to this category.</p>
+        </div>
+      </div>
+    )}
   </div>
 
   {/* Load More Section */}
