@@ -54,8 +54,11 @@ const Listproduct = () => {
       }
       const data = await response.json();
       
+      // Handle the API response structure
+      const productsData = data.products || data;
+      
       // Process the products to ensure image URLs are correct
-      const processedProducts = Array.isArray(data) ? data.map(product => ({
+      const processedProducts = Array.isArray(productsData) ? productsData.map(product => ({
         ...product,
         // Ensure image URL is properly formatted
         image: getImageUrl(product.image)
