@@ -7,6 +7,66 @@ import { Link } from 'react-router-dom';
 const Shopcategory = (props) => {
 
 const{all_products}=useContext(ShopContext)
+  
+  // Debug: Log filtered products
+  const filteredProducts = all_products
+    .filter(item => {
+      if (!item.category) return false;
+      
+      const productCategory = item.category.toString().toLowerCase().trim();
+      const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
+      
+      // Direct match for exact category values
+      if (productCategory === currentCategory) {
+        console.log(`Direct match: ${item.name} in category ${item.category}`);
+        return true;
+      }
+      
+      // Handle men's category variations
+      if (currentCategory === 'men' || currentCategory === "men's" || currentCategory === 'mens') {
+        const menCategories = ['men', 'mens', "men's"];
+        const isMatch = menCategories.includes(productCategory);
+        if (isMatch) {
+          console.log(`Men's category match: ${item.name} in ${productCategory}`);
+        }
+        return isMatch;
+      }
+      
+      // Handle women's category variations
+      if (currentCategory === 'women' || currentCategory === "women's") {
+        const womenCategories = ['women', 'womens', "women's"];
+        const isMatch = womenCategories.includes(productCategory);
+        if (isMatch) {
+          console.log(`Women's category match: ${item.name} in ${productCategory}`);
+        }
+        return isMatch;
+      }
+      
+      // Handle kids category
+      if (currentCategory === 'kids') {
+        const isMatch = productCategory === 'kids';
+        if (isMatch) {
+          console.log(`Kids category match: ${item.name} in ${productCategory}`);
+        }
+        return isMatch;
+      }
+      
+      // Handle electronics category
+      if (currentCategory === 'electronics') {
+        const electronicsCategories = ['electronics', 'electronic'];
+        const isMatch = electronicsCategories.includes(productCategory);
+        if (isMatch) {
+          console.log(`Electronics category match: ${item.name} in ${productCategory}`);
+        }
+        return isMatch;
+      }
+      
+      return false;
+    });
+  
+  console.log(`Total filtered products for category "${props.category}":`, filteredProducts.length);
+  console.log('Filtered products:', filteredProducts);
+  
   return (
 <div className="min-h-screen bg-gray-50">
   {/* Debug info */}
@@ -48,61 +108,7 @@ const{all_products}=useContext(ShopContext)
 
   {/* Enhanced Products Grid */}
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-8 lg:px-16 max-w-7xl mx-auto">
-    {all_products
-      .filter(item => {
-        if (!item.category) return false;
-        
-        const productCategory = item.category.toString().toLowerCase().trim();
-        const currentCategory = props.category ? props.category.toString().toLowerCase().trim() : '';
-        
-        // Direct match for exact category values
-        if (productCategory === currentCategory) {
-          console.log(`Direct match: ${item.name} in category ${item.category}`);
-          return true;
-        }
-        
-        // Handle men's category variations
-        if (currentCategory === 'men' || currentCategory === "men's" || currentCategory === 'mens') {
-          const menCategories = ['men', 'mens', "men's"];
-          const isMatch = menCategories.includes(productCategory);
-          if (isMatch) {
-            console.log(`Men's category match: ${item.name} in ${productCategory}`);
-          }
-          return isMatch;
-        }
-        
-        // Handle women's category variations
-        if (currentCategory === 'women' || currentCategory === "women's") {
-          const womenCategories = ['women', 'womens', "women's"];
-          const isMatch = womenCategories.includes(productCategory);
-          if (isMatch) {
-            console.log(`Women's category match: ${item.name} in ${productCategory}`);
-          }
-          return isMatch;
-        }
-        
-        // Handle kids category
-        if (currentCategory === 'kids') {
-          const isMatch = productCategory === 'kids';
-          if (isMatch) {
-            console.log(`Kids category match: ${item.name} in ${productCategory}`);
-          }
-          return isMatch;
-        }
-        
-        // Handle electronics category
-        if (currentCategory === 'electronics') {
-          const electronicsCategories = ['electronics', 'electronic'];
-          const isMatch = electronicsCategories.includes(productCategory);
-          if (isMatch) {
-            console.log(`Electronics category match: ${item.name} in ${productCategory}`);
-          }
-          return isMatch;
-        }
-        
-        return false;
-      })
-      .map((item, i) => (
+    {filteredProducts.map((item, i) => (
         <div
           key={i}
           className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300"
